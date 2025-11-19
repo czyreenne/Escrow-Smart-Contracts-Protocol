@@ -31,7 +31,9 @@ Using Local Ethereum Node Simulators:
 4. Run deploy.py (`python scripts/deploy.py 0xSELLER_ADDRESS`). Note: Seller address should belong to a different test account than the private key test account.
 5. Set buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) as OS variables. Use another 2 different private keys from the list of private keys provided by Ganache. Note: *In our case, the deployer is the same as the buyer.* Therefore, buyer private keys should belong to the same account used for deployment. Seller private key should be the private key belonging to the same account used for seller address.
 6. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
-7. Run interact.py (`python scripts/interact.py`)
+7. Run interact.py 
+Usage: `python scripts/interact.py NAME_OF_SCENARIO(S)`
+- Scenarios: 
 8. REDEPLOY the contract to retest after successful run. *Repeat steps 4 and 7.*
 Note: Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
 

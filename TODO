@@ -1,4 +1,5 @@
-- Add more scenarios for `interact.py`, test refund by fast forwarding time
+- Define what is unresolved cases and when auto-refund should occur. *ISSUE*: Since contract immutable and in state 2, refund will not work even after timeout for security reasons. To resolve issue between balancing immutability and ability to auto-refund where needed. `Escrow.vy` `interact.py`
+- Add more scenarios for `interact.py`
 - Manual test for mutation/edge-case checks in `test_escrow.py`
 - Fuzzing in `fuzz_test.py`
 - Create architecture diagram with draw.io(?) in `architecture-diagram.png`
@@ -7,3 +8,6 @@
 If have time:
 - Static analysis in `slither_report.md`
 - Manual pentesting in `manual_review.md` @Kraiois121
+
+Should we?:
+- Add testing steps for using MetaMask and Testnet in `README.md`
