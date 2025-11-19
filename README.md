@@ -33,59 +33,99 @@ Using Local Ethereum Node Simulators:
 6. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
 7. Run interact.py 
 Usage: `python scripts/interact.py NAME_OF_SCENARIO(S)`
-- Scenarios: 
 8. REDEPLOY the contract to retest after successful run. *Repeat steps 4 and 7.*
 Note: Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
 
 Examples of commands used/OS variables set:
-`python scripts/deploy.py 0x3bb560C961616430c4f1974243c6a3c0E99B129f`
-`$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
-`$Env:BUYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
-`$Env:SELLER_PRIVATE_KEY="0xba2128a3d4eca8c709b933e2fd3460f45f9ee73b213267d33fe54c24d1767727" (Account 1)`
+- `python scripts/deploy.py 0x3bb560C961616430c4f1974243c6a3c0E99B129f`
+- `$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
+- `$Env:BUYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
+- `$Env:SELLER_PRIVATE_KEY="0xba2128a3d4eca8c709b933e2fd3460f45f9ee73b213267d33fe54c24d1767727" (Account 1)`
 
 Example of interact.py output:
-<pre><code>Step 1: Buyer deposits to escrow
+<pre><code>Running deposit workflow
 
-Deposit TX hash: a672c4d1c581a0490d0122e5fdb65834b79d77fd7b90b192e5ee0a76f075da16
+Deposit event test: Buyer deposits to escrow
+
 
  Current Contract State
 State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 1
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996962044180000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1001996662000000000000
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 991909201180000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1005993712720000000000
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
 Checking for Deposited event...
 [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
+Running release workflow
 
-Step 2: Seller releases funds
+Release event test: Seller releases funds
 
-Release TX hash: e02b6bf8694d35c5d8318dc91e0dd3fe9303a1b2b955ee6dd760dd84c11a997f
 
  Current Contract State
 State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 2
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996962044180000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1002995924680000000000
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 991909201180000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1006992975400000000000
 Contract balance: 0
 Amount locked: 0
 
 Checking for Released event...
 [{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]
 
-Step 3: Buyer tries to refund after release (should fail)
+=== Refund After Release (Should Fail) ===
 
  Current Contract State
 State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 2
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996961578340000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1002995924680000000000
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 991908735760000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1006992509560000000000
 Contract balance: 0
 Amount locked: 0
 
-Refund transaction failed as expected.
 
-All Events seen in contract receipts  
-Deposited: [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]  
-Released: [{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]</code></pre>
+ Current Contract State
+State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 2
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 991908269920000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1006992509560000000000
+Contract balance: 0
+Amount locked: 0
+
+Refund failed as expected after release.
+
+=== Full Audit Trail ===
+
+Step: deposit
+TX Hash: 4111a9e5d281f21b3d5b42e769f0e1a3b262e5651d8d034a86ba286e844e6a6a
+State: 1
+Buyer Balance: 991909201180000000000
+Seller Balance: 1005993712720000000000
+Contract Balance: 1000000000000000000
+Amount Locked: 1000000000000000000
+Events: [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
+Status: 1
+------------------------------------------------
+
+Step: release
+TX Hash: 14a410df62370b09fa8f0273caeb6e8fe48c35e34a2586c22e05306ec650e350
+State: 2
+Buyer Balance: 991909201180000000000
+Seller Balance: 1006992975400000000000
+Contract Balance: 0
+Amount Locked: 0
+Events: [{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]
+Status: 1
+------------------------------------------------
+
+Step: refund_after_release
+TX Hash: 733ea030304161755507163a2b76539cf81201b4a58de33b2eda88d53eefdc5b
+State: 2
+Buyer Balance: 991908269920000000000
+Seller Balance: 1006992509560000000000
+Contract Balance: 0
+Amount Locked: 0
+Events: []
+Status: 0
+Message: Refund failed as expected after release.
+------------------------------------------------</code></pre>
 
 ## Repo Structure
 - `contracts/`: Vyper code (and interfaces)
