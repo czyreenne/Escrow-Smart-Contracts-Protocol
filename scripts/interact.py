@@ -181,71 +181,6 @@ def run_refund_before_release():
             "message": str(e)
         })
 
-# B. Refund after release
-def run_refund_after_release():
-    print("\n=== Refund After Release (Should Fail) ===")
-
-    # Deposit funds
-    deposit_tx = escrow.functions.deposit().build_transaction({
-        "from": buyer.address,
-        "value": w3.to_wei("1", "ether"),
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
-    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
-    w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
-
-    # Seller releases funds
-    release_tx = escrow.functions.release().build_transaction({
-        "from": seller.address,
-        "nonce": w3.eth.get_transaction_count(seller.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
-    tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
-    w3.eth.wait_for_transaction_receipt(tx_hash_release)
-    state_after_release = get_state()
-    print_state(state_after_release)
-
-    # Try refund (should NOT work)
-    try:
-        refund_tx = escrow.functions.refund().build_transaction({
-            "from": buyer.address,
-            "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
-        })
-        signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
-        tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
-        rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
-        state_final = get_state()
-        print_state(state_final)
-        result = "Refund failed as expected after release." if rcpt_refund.status == 0 else "ERROR: Refund succeeded after release (BUG)."
-        print(result)
-        audit_trail.append({
-            "step": "refund_after_release",
-            "tx_hash": tx_hash_refund.hex(),
-            "state": state_final,
-            "status": rcpt_refund.status,
-            "events": get_events("Refunded", tx_hash_refund),
-            "message": result
-        })
-    except Exception as e:
-        print(f"Refund attempt after release failed (expected): {e}")
-        audit_trail.append({
-            "step": "refund_after_release",
-            "tx_hash": None,
-            "state": get_state(),
-            "status": 0,
-            "events": [],
-            "message": str(e)
-        })
-
-# TODO: Refund where contract remains unresolved
-
 if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
     #     python interact.py deposit           # (just runs deposit)
@@ -285,7 +220,7 @@ if __name__ == "__main__":
     # Print comprehensive audit trail 
     print("\n=== Full Audit Trail ===")
     for step in audit_trail:
-        print(f"\nStep: {step['step']}")
+        print(f"\nScenario: {step['step']}")
         print(f"TX Hash: {step['tx_hash']}")
         print(f"State: {step['state']['state']}")
         print(f"Buyer Balance: {step['state']['buyer_balance']}")

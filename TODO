@@ -1,4 +1,7 @@
 - Define what is unresolved cases and when auto-refund should occur. *ISSUE*: Since contract immutable and in state 2, refund will not work even after timeout for security reasons. To resolve issue between balancing immutability and ability to auto-refund where needed. `Escrow.vy` `interact.py`
+- Check who exactly is the buyer / seller in `Escrow.py`
+- Research on whether Refund means take out temp block or add new block to reverse previous block
+
 - Add more scenarios for `interact.py`
 - Manual test for mutation/edge-case checks in `test_escrow.py`
 - Fuzzing in `fuzz_test.py`
