@@ -1,0 +1,41 @@
+{
+  "network": "ganache",
+  "deployments": [
+    {
+      "contract": "Escrow",
+      "address": "0xd326d8bc6d05CFA60547B32488ED70b5d5049448",
+      "txHash": "42845a7d7dad333a7f50c21b223af07b35d2d99d9a2a386690e880307075b4fd",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-19T17:31:40.600492Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        3600
+      ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0xC814272187C6A3E0BF9c9c0453f91ff795C992DD",
+      "txHash": "310242b76d3ec326d3988bad6721a1395771ba41ebdc2700ea59fc27a1598c0a",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-19T17:50:14.504546Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        3600
+      ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0x078BcFA4436738005C4face9Cba7c4A2ef3CdeC0",
+      "txHash": "7a49a40c92bfae7b1f489df7bdf10b1d648f9470b9625ccb5799e72537ddfcb8",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-19T17:52:25Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        3600
+      ]
+    }
+  ]
+}
