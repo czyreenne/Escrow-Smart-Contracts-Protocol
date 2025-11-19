@@ -1,0 +1,9 @@
+- Add more scenarios for `interact.py`, test refund by fast forwarding time
+- Manual test for mutation/edge-case checks in `test_escrow.py`
+- Fuzzing in `fuzz_test.py`
+- Create architecture diagram with draw.io(?) in `architecture-diagram.png`
+- Create slides + rehearse (max: 15 min)
+
+If have time:
+- Static analysis in `slither_report.md`
+- Manual pentesting in `manual_review.md` @Kraiois121

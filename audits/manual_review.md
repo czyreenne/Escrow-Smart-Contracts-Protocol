@@ -1,4 +1,4 @@
-# Manual Security Review (if time permits)
+# Manual Security Review (if time permits) 
 
 ## Reviewer: Name, Date
 

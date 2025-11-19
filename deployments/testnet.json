@@ -36,6 +36,30 @@
         "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
         3600
       ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0xF255878A96CaCD6B4110759F1D4b2E48183B5631",
+      "txHash": "fc2801adb3b36e1de6fc9bc29667c66cf04e0836df661162b727fc01d952b311",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-19T18:50:05Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        3600
+      ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0x4fb1cC69E106597F362065c651B1d612D3aA9767",
+      "txHash": "3976e40d41dc32495c23ee70866534cbb178924bf1218c40671cb089a8fdb677",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-19T18:53:06Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        3600
+      ]
     }
   ]
 }

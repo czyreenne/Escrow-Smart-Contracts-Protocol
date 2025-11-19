@@ -27,9 +27,63 @@ We identified 2 methods for testing:
 Using Local Ethereum Node Simulators:
 1. Install Ganache by Truffle Suite (`npm install -g ganache`)
 2. Start Ganache on a terminal (`ganache`). CLI should display a list of Available Accounts and their corresponding Private Keys.
-3. On another terminal, set deployer private key as one of the private keys available(`$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523"`)
-4. Run deploy.py (`python scripts/deploy.py 0x3bb560C961616430c4f1974243c6a3c0E99B129f`). Note: Seller address should belong to a different test account than the private key test account.
-5. 
+3. On another terminal, set deployer private key as one of the private keys available (`$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
+4. Run deploy.py (`python scripts/deploy.py 0xSELLER_ADDRESS`). Note: Seller address should belong to a different test account than the private key test account.
+5. Set buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) as OS variables. Use another 2 different private keys from the list of private keys provided by Ganache. Note: *In our case, the deployer is the same as the buyer.* Therefore, buyer private keys should belong to the same account used for deployment. Seller private key should be the private key belonging to the same account used for seller address.
+6. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
+7. Run interact.py (`python scripts/interact.py`)
+8. REDEPLOY the contract to retest after successful run. *Repeat steps 4 and 7.*
+Note: Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
+
+Examples of commands used/OS variables set:
+`python scripts/deploy.py 0x3bb560C961616430c4f1974243c6a3c0E99B129f`
+`$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
+`$Env:BUYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
+`$Env:SELLER_PRIVATE_KEY="0xba2128a3d4eca8c709b933e2fd3460f45f9ee73b213267d33fe54c24d1767727" (Account 1)`
+
+Example of interact.py output:
+<pre><code>Step 1: Buyer deposits to escrow
+
+Deposit TX hash: a672c4d1c581a0490d0122e5fdb65834b79d77fd7b90b192e5ee0a76f075da16
+
+ Current Contract State
+State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 1
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996962044180000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1001996662000000000000
+Contract balance: 1000000000000000000
+Amount locked: 1000000000000000000
+
+Checking for Deposited event...
+[{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
+
+Step 2: Seller releases funds
+
+Release TX hash: e02b6bf8694d35c5d8318dc91e0dd3fe9303a1b2b955ee6dd760dd84c11a997f
+
+ Current Contract State
+State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 2
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996962044180000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1002995924680000000000
+Contract balance: 0
+Amount locked: 0
+
+Checking for Released event...
+[{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]
+
+Step 3: Buyer tries to refund after release (should fail)
+
+ Current Contract State
+State  (0=Init, 1=Funded, 2=Released, 3=Refunded): 2
+Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 996961578340000000000
+Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1002995924680000000000
+Contract balance: 0
+Amount locked: 0
+
+Refund transaction failed as expected.
+
+All Events seen in contract receipts  
+Deposited: [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]  
+Released: [{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]</code></pre>
 
 ## Repo Structure
 - `contracts/`: Vyper code (and interfaces)
