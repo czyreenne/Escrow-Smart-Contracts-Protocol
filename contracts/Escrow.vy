@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# @version ^0.3.1
+# @version ^0.4.3
 
 event Deposited:
     buyer: address
@@ -20,7 +20,7 @@ start: public(uint256)
 amount: public(uint256)
 state: public(uint8)  # 0=INIT, 1=FUNDED, 2=RELEASED, 3=REFUNDED
 
-@external
+@deploy
 def __init__(_seller: address, _timeout: uint256):
     self.buyer = msg.sender
     self.seller = _seller
@@ -36,7 +36,7 @@ def deposit():
     assert msg.value > 0
     self.amount = msg.value
     self.state = 1
-    log Deposited(msg.sender, msg.value)
+    log Deposited(buyer=msg.sender, amount=msg.value)
 
 @external
 def release():
@@ -46,7 +46,7 @@ def release():
     amt: uint256 = self.amount
     self.amount = 0
     send(self.seller, amt)
-    log Released(self.seller, amt)
+    log Released(seller=self.seller, amount=amt)
 
 @external
 def refund():
@@ -56,4 +56,4 @@ def refund():
     amt: uint256 = self.amount
     self.amount = 0
     send(self.buyer, amt)
-    log Refunded(self.buyer, amt)
+    log Refunded(buyer=self.buyer, amount=amt)

@@ -12,9 +12,12 @@ A legally-aware, security-hardened escrow protocol implemented in Vyper for the 
 1. Clone this repo
 2. Set up virtual environment (`python -m venv venv`)
 3. Navigate to virtual environment (`venv\Scripts\activate`)
-4. Install dependencies in virtual environment (`pip install vyper` and set up Brownie `pip install eth-brownie`)
-5. Check that Vyper (`vyper --version`) and Brownie (`brownie --version`) are installed 
+4. Install dependencies in virtual environment (`pip install vyper` and set up web3 `pip show web3`)
+5. Check that Vyper (`vyper --version`) and Web3 (`web3 --version`) are installed 
 6. [Guide to deploy and test](docs/overview.md)
+7. Compile Escrow.vy script and get abi (`vyper -f abi Escrow.vy`) and bytecode (`vyper -f bytecode Escrow.vy`). Make sure you are in the same directory as Escrow.vy script or replace Escrow.vy to path to file Escrow.vy.
+8. Set deployer private key as an environment variable (For PS terminals -> `$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
+9. Input seller address when deploying (`python deploy.py 0xSELLER_ADDRESS`)
 
 ## Repo Structure
 - `contracts/`: Vyper code (and interfaces)
