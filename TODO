@@ -3,7 +3,7 @@ In progress:
 - right now, contract conditions that are fulfilled is also specified as a number. this number e.g. 2, takes the first 2 out of the 3 conditions to be fulfilled, and the last to be UNfulfilled.
 - not sure if timeout really works. 
 
-- To add validity check for integrity: Check who exactly is the buyer / seller in `Escrow.py`
+- To add validity check for integrity: Check who exactly is the buyer / seller in `Escrow.py`. Right now buyer private key and seller private key are inputted as OS variables. Since buyer is also deployer, getting buyer to deploy and run contract with buyer private key on OS would not be a problem but not sure how the logistics of inputting seller private key as an OS var would work?
 - Research on whether Refund means take out temp block or add new block to reverse previous block
 
 Not started:
