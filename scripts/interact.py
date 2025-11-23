@@ -1,5 +1,3 @@
-# Below are various interactions with the deployed contract for the purposes of the demo
-
 import os
 import json
 from web3 import Web3
@@ -53,7 +51,7 @@ def get_state():
 
 def print_state(state_dict):
     print("\n Current Contract State")
-    print(f"State  (0=Init, 1=Funded, 2=Released, 3=Refunded): {state_dict['state']}")
+    print(f"State  (0=Init, 1=Funded): {state_dict['state']}")
     print(f"Buyer:   {state_dict['buyer']} | Balance: {state_dict['buyer_balance']}")
     print(f"Seller:  {state_dict['seller']} | Balance: {state_dict['seller_balance']}")
     print(f"Contract balance: {state_dict['contract_balance']}")
@@ -79,13 +77,11 @@ def run_deposit():
     signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
     tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
     rcpt_deposit = w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
-
     state_dict = get_state()
     print_state(state_dict)
     deposited_events = get_events("Deposited", tx_hash_deposit)
     print("Checking for Deposited event...")
     print(deposited_events)
-
     # Audit trail append
     audit_trail.append({
         "step": "deposit",
@@ -108,13 +104,11 @@ def run_release():
     signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
     tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
     rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
-
     state_dict = get_state()
     print_state(state_dict)
     released_events = get_events("Released", tx_hash_release)
     print("Checking for Released event...")
     print(released_events)
-
     audit_trail.append({
         "step": "release",
         "tx_hash": tx_hash_release.hex(),
@@ -123,31 +117,67 @@ def run_release():
         "status": rcpt_release.status
     })
 
-# 3. Refund scenarios
+# Fulfill all contract conditions so seller can release funds
+def fulfill_all_conditions():
+    # Fulfills every condition required by the escrow contract
+    print("Fulfilling ALL contract conditions.")
+    total = escrow.functions.num_conditions().call()
+    for i in range(total):
+        tx = escrow.functions.fulfill_condition(i).build_transaction({
+            "from": buyer.address,  # or authorized caller
+            "nonce": w3.eth.get_transaction_count(buyer.address),
+            "gas": 100000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_tx = w3.eth.account.sign_transaction(tx, buyer_priv)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"  Condition {i} fulfilled.")
+    print("All conditions fulfilled.\n")
 
-# A. Refund before release
-def run_refund_before_release():
-    print("\n=== Refund Before Release (Should Succeed) ===")
+# Partial fulfillment of conditions 
+def partial_fulfill(num_to_fulfill):
+    # Fulfills exactly num_to_fulfill conditions (from 0 up), leaving the rest unfulfilled.
+    print(f"Fulfilling {num_to_fulfill} contract conditions (simulate partial fulfillment).")
+    total = escrow.functions.num_conditions().call()
+    for i in range(min(num_to_fulfill, total)):
+        tx = escrow.functions.fulfill_condition(i).build_transaction({
+            "from": buyer.address,  # or authorized caller
+            "nonce": w3.eth.get_transaction_count(buyer.address),
+            "gas": 100000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_tx = w3.eth.account.sign_transaction(tx, buyer_priv)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+        print(f"  Condition {i} fulfilled.")
+    print("Partial fulfill step complete.")
 
-    # Deposit funds
-    deposit_tx = escrow.functions.deposit().build_transaction({
-        "from": buyer.address,
-        "value": w3.to_wei("1", "ether"),
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
-    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
-    w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
-    state_dict = get_state()
-    print_state(state_dict)
+# 3. Partial fulfillment then refund before release
+def run_partial_fulfillment_and_refund(num_to_fulfill):
+    # This deposits, fulfills only `num_to_fulfill` conditions, fast-forwards time, and attempts refund.
+    print("\n=== Partial Fulfillment Then Refund (Should NOT Succeed) ===")
+    # # Deposit funds
+    # deposit_tx = escrow.functions.deposit().build_transaction({
+    #     "from": buyer.address,
+    #     "value": w3.to_wei("1", "ether"),
+    #     "nonce": w3.eth.get_transaction_count(buyer.address),
+    #     "gas": 200000,
+    #     "gasPrice": w3.to_wei("20", "gwei")
+    # })
+    # signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
+    # tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
+    # w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
+    # print_state(get_state())
+
+    # Fulfill only some (simulate unresolved)
+    partial_fulfill(num_to_fulfill)
 
     # Fast-forward time past timeout
     w3.provider.make_request("evm_increaseTime", [3601])
     w3.provider.make_request("evm_mine", [])
 
-    # Try refund (should work)
+    # Now attempt refund (as in your existing run_refund_before_release)
     try:
         refund_tx = escrow.functions.refund().build_transaction({
             "from": buyer.address,
@@ -160,10 +190,10 @@ def run_refund_before_release():
         rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
         state_after = get_state()
         print_state(state_after)
-        result = "Refund succeeded (as expected, before release and after timeout)" if rcpt_refund.status == 1 else "Refund failed unexpectedly."
+        result = "Refund succeeded (should not occur; not all conditions fulfilled)" if rcpt_refund.status == 1 else "Refund failed as expected."
         print(result)
         audit_trail.append({
-            "step": "refund_before_release",
+            "step": "partial_fulfillment_and_refund",
             "tx_hash": tx_hash_refund.hex(),
             "state": state_after,
             "status": rcpt_refund.status,
@@ -171,9 +201,9 @@ def run_refund_before_release():
             "message": result
         })
     except Exception as e:
-        print(f"Refund attempt before release failed: {e}")
+        print(f"Refund attempt failed: {e}")
         audit_trail.append({
-            "step": "refund_before_release",
+            "step": "partial_fulfillment_and_refund",
             "tx_hash": None,
             "state": get_state(),
             "status": 0,
@@ -183,15 +213,13 @@ def run_refund_before_release():
 
 if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
-    #     python interact.py deposit           # (just runs deposit)
-    #     or python interact.py deposit release   # (runs both)
-    #     or python interact.py all               # (runs all steps in order)
+    #     python scripts/interact.py deposit           # (just runs deposit)
+    #     python scripts/interact.py fulfill_all_conditions release  # (deposit, fulfill, then release)
+    #     python scripts/interact.py partial_fulfillment_and_refund:NUMBER_OF_SCENARIOS_FULFILLED        # (just runs refund)
 
     # The Escrow contract `state` field means:
-    #   0 = Init      (Contract is freshly deployed, no funds yet)
-    #   1 = Funded    (Buyer has deposited funds, waiting for release or refund)
-    #   2 = Released  (Seller has claimed the funds)
-    #   3 = Refunded  (Funds returned to buyer after timeout)
+    #   0 = Init      (Contract is freshly deployed, no funds yet / Release or Refund has occured)
+    #   1 = Funded    (Buyer has deposited funds, waiting for Release or Refund)
 
     # The transaction `status` field means:
     #   1 = Success   (Transaction executed and state changed as intended)
@@ -199,18 +227,24 @@ if __name__ == "__main__":
 
     tests_to_run = sys.argv[1:] if len(sys.argv) > 1 else []
 
-    if not tests_to_run or 'all' in tests_to_run:
+    if not tests_to_run:
         run_deposit()
+        fulfill_all_conditions()
         run_release()
-        run_refund_before_release()
+        run_partial_fulfillment_and_refund(1)
     else:
         for test in tests_to_run:
             if test == 'deposit':
                 run_deposit()
+            elif test == 'fulfill_all_conditions':
+                fulfill_all_conditions()
             elif test == 'release':
                 run_release()
-            elif test == 'refund_before_release':
-                run_refund_before_release()
+            # Partial fulfillment test, number of conditions controlled via CLI arg
+            elif test.startswith("partial_fulfillment_and_refund"):
+                # e.g., python interact.py partial_fulfillment_and_refund:2
+                _, n = test.split(":")
+                run_partial_fulfillment_and_refund(int(n))
             else:
                 print(f"Unknown test case: {test}")
 

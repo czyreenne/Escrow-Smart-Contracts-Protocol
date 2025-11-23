@@ -1,3 +1,4 @@
+# python scripts/deploy.py <seller_address> <timeout_seconds> <num_conditions>
 import os
 import sys
 import json
@@ -9,13 +10,17 @@ NETWORK_NAME = "ganache"
 # This is the name of your contract
 CONTRACT_NAME = "Escrow"
 
-# Check if you typed the seller's address when you run the script
-if len(sys.argv) < 2:
-    print("Usage: python scripts/deploy.py <seller_address>")
+# Check if you typed the seller's address, timeout, and num_conditions when you run the script
+if len(sys.argv) < 4:
+    print("Usage: python scripts/deploy.py <seller_address> <timeout> <num_conditions>")
     sys.exit(1)
 
 # Get the seller's address from what you typed
 seller_address = sys.argv[1]
+# NEW: Get the timeout from input! (seconds)
+timeout = int(sys.argv[2])
+# NEW: Get the number of required conditions from input
+num_conditions = int(sys.argv[3])
 
 # Get your secret key from the computer's environment (don't share your key)
 deployer_private_key = os.environ.get('DEPLOYER_PRIVATE_KEY')
@@ -37,8 +42,6 @@ assert w3.is_connected(), "Web3 not connected to Ganache!"
 # Get your deployer address using your secret key
 deployer_account = w3.eth.account.from_key(deployer_private_key)
 deployer_address = deployer_account.address
-# Set the timeout number (this goes in the contract)
-timeout = 3600  # seconds
 
 # Create a contract object so we can deploy it
 Escrow = w3.eth.contract(abi=escrow_abi, bytecode=escrow_bytecode)
@@ -46,7 +49,7 @@ Escrow = w3.eth.contract(abi=escrow_abi, bytecode=escrow_bytecode)
 nonce = w3.eth.get_transaction_count(deployer_address)
 
 # Make a "contract deployment" transaction
-tx = Escrow.constructor(seller_address, timeout).build_transaction({
+tx = Escrow.constructor(seller_address, timeout, num_conditions).build_transaction({
     "from": deployer_address,
     "nonce": nonce,
     "gas": 4000000,                # Amount of "fuel" for the computer
@@ -89,7 +92,7 @@ deployment_record = {
     "deployer": deployer_address,
     "seller": seller_address,
     "timestamp": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-    "constructorArgs": [seller_address, timeout]
+    "constructorArgs": [seller_address, timeout, num_conditions]   # NEW: include timeout and num_conditions in record
 }
 # Add the record to the 'deployments' list
 data["deployments"].append(deployment_record)
