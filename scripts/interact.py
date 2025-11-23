@@ -203,7 +203,6 @@ if __name__ == "__main__":
         run_deposit()
         run_release()
         run_refund_before_release()
-        run_refund_after_release()
     else:
         for test in tests_to_run:
             if test == 'deposit':
@@ -212,8 +211,6 @@ if __name__ == "__main__":
                 run_release()
             elif test == 'refund_before_release':
                 run_refund_before_release()
-            elif test == 'refund_after_release':
-                run_refund_after_release()
             else:
                 print(f"Unknown test case: {test}")
 

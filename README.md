@@ -12,8 +12,8 @@ A legally-aware, security-hardened escrow protocol implemented in Vyper for the 
 1. Clone this repo
 2. Set up virtual environment (`python -m venv venv`)
 3. Navigate to virtual environment (`venv\Scripts\activate`)
-4. Install dependencies in virtual environment (`pip install vyper` and set up web3 `pip show web3`)
-5. Check that Vyper (`vyper --version`) and Web3 (`web3 --version`) are installed 
+4. Install dependencies in virtual environment (`pip install vyper` and set up web3 `pip install web3`)
+5. Check that Vyper (`vyper --version`) and Web3 (`pip show web3`) are installed 
 6. [Guide to deploy and test](docs/overview.md)
 7. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`)
 8. Set deployer private key as an environment variable (For PS terminals -> `$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
