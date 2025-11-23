@@ -1,8 +1,12 @@
-- Define what is unresolved cases and when auto-refund should occur. *ISSUE*: Since contract immutable and in state 2, refund will not work even after timeout for security reasons. To resolve issue between balancing immutability and ability to auto-refund where needed. `Escrow.vy` `interact.py`
-- Check who exactly is the buyer / seller in `Escrow.py`
+In progress: 
+- only number of conditions are taken in. do we want to take in specific types of conditions? but then how do we systemically check for whether these conditions are fulfilled? accounting for different ways of fulfilling conditions based on factual scenario/nature of high factual dependency for determination of fulfilment of contract in law.
+- right now, contract conditions that are fulfilled is also specified as a number. this number e.g. 2, takes the first 2 out of the 3 conditions to be fulfilled, and the last to be UNfulfilled.
+- not sure if timeout really works. 
+
+- To add validity check for integrity: Check who exactly is the buyer / seller in `Escrow.py`
 - Research on whether Refund means take out temp block or add new block to reverse previous block
 
-- Add more scenarios for `interact.py`
+Not started:
 - Manual test for mutation/edge-case checks in `test_escrow.py`
 - Fuzzing in `fuzz_test.py`
 - Create architecture diagram with draw.io(?) in `architecture-diagram.png`
