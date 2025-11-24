@@ -16,7 +16,8 @@ A legally-aware, security-hardened escrow protocol implemented in Vyper for the 
 5. Check that Vyper (`vyper --version`) and Web3 (`pip show web3`) are installed 
 6. [Guide to deploy and test](docs/overview.md)
 7. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`)
-8. Set deployer private key as an environment variable (For PS terminals -> `$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
+8. Set deployer address as an environment variable (For PS terminals -> `$Env:DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`)
+9. Input deployer private key when prompted
 9. Input seller address, timeout condition and number of conditions when deploying (`python scripts/deploy.py <seller_address> <timeout_seconds> <num_conditions>`)
 
 ## Testing 
@@ -29,7 +30,7 @@ Using Local Ethereum Node Simulators:
 2. Start Ganache on a terminal (`ganache`). CLI should display a list of Available Accounts and their corresponding Private Keys.
 3. On another terminal, set deployer private key as one of the private keys available (`$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
 4. Run deploy.py (`python scripts/deploy.py 0xSELLER_ADDRESS`). Note: Seller address should belong to a different test account than the private key test account.
-5. Set buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) as OS variables. Use another 2 different private keys from the list of private keys provided by Ganache. Note: *In our case, the deployer is the same as the buyer.* Therefore, buyer private keys should belong to the same account used for deployment. Seller private key should be the private key belonging to the same account used for seller address.
+5. Set buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) as OS variables. Note: *In our case, the deployer is the same as the buyer.* Therefore, buyer private keys should belong to the same account used for deployment. Seller private key should be the private key belonging to the same account used for seller address.
 6. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
 7. Run interact.py 
 Usage in for scenarios in general: `python scripts/interact.py NAME_OF_SCENARIO(S)`
@@ -38,9 +39,9 @@ Usage for Refund scenario: `python interact.py partial_fulfillment_and_refund:NU
 Note: Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
 
 Examples of commands used/OS variables set:
-- `python scripts/deploy.py 0x3bb560C961616430c4f1974243c6a3c0E99B129f`
+- `$Env:DEPLOYER_ADDRESS="0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059" (Account 0)` 
+*Might remove the DEPLOYER_PRIVATE_KEY and SELLER_PRIVATE_KEY below*
 - `$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
-- `$Env:BUYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
 - `$Env:SELLER_PRIVATE_KEY="0xba2128a3d4eca8c709b933e2fd3460f45f9ee73b213267d33fe54c24d1767727" (Account 1)`
 
 Example of interact.py output [Deposit - Fulfil ALL Conditions - Release]:

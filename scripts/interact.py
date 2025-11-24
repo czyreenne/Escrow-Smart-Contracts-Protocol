@@ -215,7 +215,7 @@ if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
     #     python scripts/interact.py deposit           # (just runs deposit)
     #     python scripts/interact.py fulfill_all_conditions release  # (deposit, fulfill, then release)
-    #     python scripts/interact.py partial_fulfillment_and_refund:NUMBER_OF_SCENARIOS_FULFILLED        # (just runs refund)
+    #     python scripts/interact.py partial_fulfillment_and_refund:NUMBER_OF_CONDITIONS_FULFILLED        # (just runs refund)
 
     # The Escrow contract `state` field means:
     #   0 = Init      (Contract is freshly deployed, no funds yet / Release or Refund has occured)

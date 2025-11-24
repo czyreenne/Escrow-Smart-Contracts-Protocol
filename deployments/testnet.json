@@ -258,6 +258,19 @@
         4000,
         3
       ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0x1851B7c7656E609fe21A3C50A44EBBf568dAcAe7",
+      "txHash": "4b1a5733c0e5e7b22d56362a85eeeef3835e1cc9c28bb49b4b0314e5d025162f",
+      "deployer": "0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059",
+      "seller": "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+      "timestamp": "2025-11-24T17:34:52Z",
+      "constructorArgs": [
+        "0x3bb560C961616430c4f1974243c6a3c0E99B129f",
+        4000,
+        3
+      ]
     }
   ]
 }

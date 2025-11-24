@@ -4,7 +4,7 @@ In progress:
 - not sure if timeout really works. 
 
 - To add validity check for integrity: Check who exactly is the buyer / seller in `Escrow.py`. Right now buyer private key and seller private key are inputted as OS variables. Since buyer is also deployer, getting buyer to deploy and run contract with buyer private key on OS would not be a problem but not sure how the logistics of inputting seller private key as an OS var would work?
-- Research on whether Refund means take out temp block or add new block to reverse previous block
+=> hide using app interface for now
 
 Not started:
 - Manual test for mutation/edge-case checks in `test_escrow.py`
@@ -15,6 +15,3 @@ Not started:
 If have time:
 - Static analysis in `slither_report.md`
 - Manual pentesting in `manual_review.md` @Kraiois121
-
-Should we?:
-- Add testing steps for using MetaMask and Testnet in `README.md`
