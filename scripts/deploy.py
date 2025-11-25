@@ -4,6 +4,31 @@ import sys
 import json
 from web3 import Web3
 from datetime import datetime, timezone
+import getpass
+
+# Ensures that only buyer/deployer can run the script
+private_key = getpass.getpass(prompt="Enter deployer private key: ")
+os.environ['DEPLOYER_PRIVATE_KEY'] = private_key # store inputted private key in the OS environ
+DEPLOYER_PRIVATE_KEY = os.environ.get("DEPLOYER_PRIVATE_KEY") # This environment variable stores the deployer's private key
+assert DEPLOYER_PRIVATE_KEY is not None, "ERROR: Deployer private key must be set in environment!"
+
+# Calculate deployer address securely from private key
+w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
+deployer_account = w3.eth.account.from_key(DEPLOYER_PRIVATE_KEY)
+deployer_address = deployer_account.address.lower().strip()
+print(deployer_address)
+
+# Check address against a whitelist (could be deployer or buyer, passed via env)
+EXPECTED_ADDRESSES = [
+    os.environ.get("DEPLOYER_ADDRESS", "").lower(),
+]
+
+assert deployer_address in EXPECTED_ADDRESSES, (
+    "ERROR: Private key does not match any authorized deployer address."
+)
+
+# Use the deployer_account for all transactions below this line.
+print("Verified: deployment authorized for address", deployer_address)
 
 # This is the blockchain network name
 NETWORK_NAME = "ganache"
