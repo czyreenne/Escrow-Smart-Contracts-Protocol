@@ -1,6 +1,7 @@
 import os
 import json
 from web3 import Web3
+from web3.exceptions import ContractLogicError
 from datetime import datetime
 import sys
 
@@ -63,121 +64,143 @@ def get_events(event_name, tx_hash):
     events = getattr(escrow.events, event_name)().process_receipt(receipt)
     return [dict(e.args) for e in events]
 
-# 1. Deposit by Buyer 
-def run_deposit():
-    print("Running deposit workflow")
-    print("\nDeposit event test: Buyer deposits to escrow\n")
-    deposit_tx = escrow.functions.deposit().build_transaction({
+# NEW: Added test for buyer to add conditions
+def add_conditions(description):
+    tx_add = escrow.functions.add_conditions(description).build_transaction({
         "from": buyer.address,
-        "value": w3.to_wei("1", "ether"),  # 1 ETH deposit
         "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
+        "gas": 2000000,
+        "gasPrice": w3.to_wei("20", "gwei"),
     })
-    signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
-    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
-    rcpt_deposit = w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
+    signed_add = w3.eth.account.sign_transaction(tx_add, buyer_priv)
+    tx_hash_add = w3.eth.send_raw_transaction(signed_add.raw_transaction)
+    rcpt_add = w3.eth.wait_for_transaction_receipt(tx_hash_add)
+    print(f"Condition added: {description}")
+    # Optionally, print/log event data
+    events = get_events("ConditionAdded", tx_hash_add)
+    print("Added condition event:", events)
+
+# NEW: Added check to print the full details of all conditions
+def print_all_conditions():
+    num = escrow.functions.get_num_conditions().call()
+    print(f"Total Conditions: {num}")
+    for i in range(num):
+        desc, fulfilled = escrow.functions.get_condition(i).call()
+        print(f"Condition {i}: {desc} | Fulfilled: {fulfilled}")
+
+# NEW: Let's seller check if they have fulfilled all the conditions
+def all_conditions_fulfilled():
+    all_fulfilled = escrow.functions.all_conditions_fulfilled().call({
+        "from": seller.address
+    })
+    if all_fulfilled:
+        print("All conditions are fulfilled")
+    else:
+        print("Not all conditions are fulfilled. Please check with print_all_conditions()")
+
+# NEW: Seller can fulfill specific conditions specified by the index in the input array
+def fulfill_conditions(indices):
+    seen = set()
+    unique_indices = []
+    for idx in indices:
+        if idx not in seen:
+            unique_indices.append(idx)
+            seen.add(idx)
+    for idx2 in unique_indices:
+        try: 
+            tx = escrow.functions.fulfill_condition(idx2).build_transaction({
+                "from": seller.address,
+                "nonce": w3.eth.get_transaction_count(seller.address),
+                "gas": 100000,
+                "gasPrice": w3.to_wei("200", "gwei")
+            })
+            signed_fulfill = w3.eth.account.sign_transaction(tx, seller_priv)
+            tx_hash_fulfill = w3.eth.send_raw_transaction(signed_fulfill.raw_transaction)
+            rcpt_fulfill = w3.eth.wait_for_transaction_receipt(tx_hash_fulfill)
+            print(f"    Condition {idx2} fulfilled.")
+        except Exception as ex:
+            print(f"Error fulfilling condition {idx2}: {ex} ")
     state_dict = get_state()
     print_state(state_dict)
-    deposited_events = get_events("Deposited", tx_hash_deposit)
-    print("Checking for Deposited event...")
-    print(deposited_events)
-    # Audit trail append
-    audit_trail.append({
-        "step": "deposit",
-        "tx_hash": tx_hash_deposit.hex(),
-        "events": deposited_events,
-        "state": state_dict,
-        "status": rcpt_deposit.status
-    })
+    print("Condition(s) fulfilled")
+
+# 1. Deposit by Buyer 
+def run_deposit():
+    try:
+        print("Running deposit workflow")
+        print("\nDeposit event test: Buyer deposits to escrow\n")
+        deposit_tx = escrow.functions.deposit().build_transaction({
+            "from": buyer.address,
+            "value": w3.to_wei("1", "ether"),  # 1 ETH deposit
+            "nonce": w3.eth.get_transaction_count(buyer.address),
+            "gas": 200000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
+        tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
+        rcpt_deposit = w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
+        state_dict = get_state()
+        print_state(state_dict)
+        deposited_events = get_events("Deposited", tx_hash_deposit)
+        print("Checking for Deposited event...")
+        print(deposited_events)
+        # Audit trail append
+        audit_trail.append({
+            "step": "deposit",
+            "tx_hash": tx_hash_deposit.hex(),
+            "events": deposited_events,
+            "state": state_dict,
+            "status": rcpt_deposit.status
+        })
+    except ContractLogicError as ex:
+        state_dict = get_state()
+        print(f"Deposit failed due to contract logic: {ex}")
+    except Exception as e:
+        state_dict = get_state()
+        print(f"Deposit attempt failed due to other error: {e}")
 
 # 2. Seller releases funds (claim) 
 def run_release():
-    print("Running release workflow")
-    print("\nRelease event test: Seller releases funds\n")
-    release_tx = escrow.functions.release().build_transaction({
-        "from": seller.address,
-        "nonce": w3.eth.get_transaction_count(seller.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
-    tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
-    rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
-    state_dict = get_state()
-    print_state(state_dict)
-    released_events = get_events("Released", tx_hash_release)
-    print("Checking for Released event...")
-    print(released_events)
-    audit_trail.append({
-        "step": "release",
-        "tx_hash": tx_hash_release.hex(),
-        "events": released_events,
-        "state": state_dict,
-        "status": rcpt_release.status
-    })
-
-# Fulfill all contract conditions so seller can release funds
-def fulfill_all_conditions():
-    # Fulfills every condition required by the escrow contract
-    print("Fulfilling ALL contract conditions.")
-    total = escrow.functions.num_conditions().call()
-    for i in range(total):
-        tx = escrow.functions.fulfill_condition(i).build_transaction({
-            "from": buyer.address,  # or authorized caller
-            "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 100000,
+    try:
+        print("Running release workflow")
+        print("\nRelease event test: Seller releases funds\n")
+        release_tx = escrow.functions.release().build_transaction({
+            "from": seller.address,
+            "nonce": w3.eth.get_transaction_count(seller.address),
+            "gas": 200000,
             "gasPrice": w3.to_wei("20", "gwei")
         })
-        signed_tx = w3.eth.account.sign_transaction(tx, buyer_priv)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        w3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f"  Condition {i} fulfilled.")
-    print("All conditions fulfilled.\n")
-
-# Partial fulfillment of conditions 
-def partial_fulfill(num_to_fulfill):
-    # Fulfills exactly num_to_fulfill conditions (from 0 up), leaving the rest unfulfilled.
-    print(f"Fulfilling {num_to_fulfill} contract conditions (simulate partial fulfillment).")
-    total = escrow.functions.num_conditions().call()
-    for i in range(min(num_to_fulfill, total)):
-        tx = escrow.functions.fulfill_condition(i).build_transaction({
-            "from": buyer.address,  # or authorized caller
-            "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 100000,
-            "gasPrice": w3.to_wei("20", "gwei")
+        signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
+        tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
+        rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
+        state_dict = get_state()
+        print_state(state_dict)
+        released_events = get_events("Released", tx_hash_release)
+        print("Checking for Released event...")
+        print(released_events)
+        audit_trail.append({
+            "step": "release",
+            "tx_hash": tx_hash_release.hex(),
+            "events": released_events,
+            "state": state_dict,
+            "status": rcpt_release.status
         })
-        signed_tx = w3.eth.account.sign_transaction(tx, buyer_priv)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        w3.eth.wait_for_transaction_receipt(tx_hash)
-        print(f"  Condition {i} fulfilled.")
-    print("Partial fulfill step complete.")
+    except ContractLogicError as ex:
+        state_dict = get_state()
+        print(f"Release failed due to contract logic: {ex}")
+    except Exception as e:
+        state_dict = get_state()
+        print(f"Release attempt failed due to other error: {e}")
 
 # 3. Partial fulfillment then refund before release
-def run_partial_fulfillment_and_refund(num_to_fulfill):
-    # This deposits, fulfills only `num_to_fulfill` conditions, fast-forwards time, and attempts refund.
-    print("\n=== Partial Fulfillment Then Refund (Should NOT Succeed) ===")
-    # # Deposit funds
-    # deposit_tx = escrow.functions.deposit().build_transaction({
-    #     "from": buyer.address,
-    #     "value": w3.to_wei("1", "ether"),
-    #     "nonce": w3.eth.get_transaction_count(buyer.address),
-    #     "gas": 200000,
-    #     "gasPrice": w3.to_wei("20", "gwei")
-    # })
-    # signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
-    # tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
-    # w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
-    # print_state(get_state())
-
-    # Fulfill only some (simulate unresolved)
-    partial_fulfill(num_to_fulfill)
+def run_incomplete_and_refund():
+    print("\n=== Incomplete and Refund (Should NOT Succeed if running interact.py with no specifiers) ===")
 
     # Fast-forward time past timeout
     w3.provider.make_request("evm_increaseTime", [3601])
     w3.provider.make_request("evm_mine", [])
 
-    # Now attempt refund (as in your existing run_refund_before_release)
+    # Now attempt refund as buyer
     try:
         refund_tx = escrow.functions.refund().build_transaction({
             "from": buyer.address,
@@ -190,32 +213,49 @@ def run_partial_fulfillment_and_refund(num_to_fulfill):
         rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
         state_after = get_state()
         print_state(state_after)
-        result = "Refund succeeded (should not occur; not all conditions fulfilled)" if rcpt_refund.status == 1 else "Refund failed as expected."
-        print(result)
+        if rcpt_refund.status== 1:
+            print("Refund succeeded!")
+        else:
+            print("Refund failed. Transaction reverted.")
         audit_trail.append({
-            "step": "partial_fulfillment_and_refund",
+            "step": "incomplete_and_refund",
             "tx_hash": tx_hash_refund.hex(),
             "state": state_after,
             "status": rcpt_refund.status,
-            "events": get_events("Refunded", tx_hash_refund),
-            "message": result
+            "events": get_events("Refunded", tx_hash_refund)
         })
-    except Exception as e:
-        print(f"Refund attempt failed: {e}")
+    except ContractLogicError as ex:
+        current_state = get_state()
+        fulfilled = []
+        num_conditions = escrow.functions.get_num_conditions().call()
+        for i in range(num_conditions):
+            _desc, is_fulfilled = escrow.functions.get_condition(i).call()
+            if is_fulfilled:
+                fulfilled.append(i)
         audit_trail.append({
-            "step": "partial_fulfillment_and_refund",
+            "step": "incomplete_and_refund",
             "tx_hash": None,
-            "state": get_state(),
+            "state": current_state,
             "status": 0,
-            "events": [],
-            "message": str(e)
+            "events": []
         })
+        print(f"Refund failed due to contract logic: {ex}\nFulfilled conditions at failure: {fulfilled}")
+    except Exception as e:
+        current_state = get_state()
+        audit_trail.append({
+            "step": "incomplete_and_refund",
+            "tx_hash": None,
+            "state": current_state,
+            "status": 0,
+            "events": []
+        })
+        print(f"Refund attempt failed due to other error: {e}")
 
 if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
     #     python scripts/interact.py deposit           # (just runs deposit)
     #     python scripts/interact.py fulfill_all_conditions release  # (deposit, fulfill, then release)
-    #     python scripts/interact.py partial_fulfillment_and_refund:NUMBER_OF_CONDITIONS_FULFILLED        # (just runs refund)
+    #     python scripts/interact.py partial_fulfillment_and_refund:NUMBER_OF_SCENARIOS_FULFILLED        # (just runs refund)
 
     # The Escrow contract `state` field means:
     #   0 = Init      (Contract is freshly deployed, no funds yet / Release or Refund has occured)
@@ -229,24 +269,37 @@ if __name__ == "__main__":
 
     if not tests_to_run:
         run_deposit()
-        fulfill_all_conditions()
+        num_conditions = escrow.functions.get_num_conditions().call()
+        fulfill_conditions(list(range(num_conditions)))  # This fulfills all
         run_release()
-        run_partial_fulfillment_and_refund(1)
+        run_incomplete_and_refund()
     else:
         for test in tests_to_run:
-            if test == 'deposit':
+            if test == 'add_conditions':
+                if len(sys.argv) < 3:
+                    print("Usage: python3 scripts/interact.py add_conditions \"Description text\"")
+                    sys.exit(1)
+                description = sys.argv[2]
+                add_conditions(description)
+            elif test == 'print_all_conditions':
+                print_all_conditions()
+            elif test == "fulfill_conditions":
+                if len(sys.argv) < 3:
+                    print("Usage: python3 scripts/interact.py fulfill_conditions idx1 idx2")
+                    sys.exit(1)
+                #parse indices from remaining command-line args (as integers)
+                indices = [int(arg) for arg in sys.argv[2:]]
+                fulfill_conditions(indices)
+            elif test == "check_conditions":
+                all_conditions_fulfilled()
+            elif test == 'deposit':
                 run_deposit()
-            elif test == 'fulfill_all_conditions':
-                fulfill_all_conditions()
             elif test == 'release':
                 run_release()
-            # Partial fulfillment test, number of conditions controlled via CLI arg
-            elif test.startswith("partial_fulfillment_and_refund"):
-                # e.g., python interact.py partial_fulfillment_and_refund:2
-                _, n = test.split(":")
-                run_partial_fulfillment_and_refund(int(n))
+            elif test == "incomplete_and_refund":
+                run_incomplete_and_refund()
             else:
-                print(f"Unknown test case: {test}")
+                print(f"Unknown test case: {test}. *Note: just ignore this if you see an output when calling one of the non-main functions")
 
     # Print comprehensive audit trail 
     print("\n=== Full Audit Trail ===")
