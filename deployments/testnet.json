@@ -667,6 +667,18 @@
         "0x86Ff90dc38ec76339159E1306dbffc2c50d0BDFE",
         3600
       ]
+    },
+    {
+      "contract": "Escrow",
+      "address": "0xFFa7C14281033835c14F511079825Aa01bb7e4a6",
+      "txHash": "c8bf40b629e826842fef0f276ad0fdc0d9fdd86ea7bc51debfd8cddd03c213db",
+      "deployer": "0xA4ED172a53c3547B31a0165F8e9284173B303F31",
+      "seller": "0x86Ff90dc38ec76339159E1306dbffc2c50d0BDFE",
+      "timestamp": "2025-11-25T03:33:43Z",
+      "constructorArgs": [
+        "0x86Ff90dc38ec76339159E1306dbffc2c50d0BDFE",
+        3600
+      ]
     }
   ]
 }
