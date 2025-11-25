@@ -1,12 +1,14 @@
-In progress: 
-- not sure if timeout really works. 
-
 Not started:
-- Manual test for mutation/edge-case checks in `test_escrow.py`
-- Fuzzing in `fuzz_test.py`
 - Create architecture diagram with draw.io(?) in `architecture-diagram.png`
-- Create slides + rehearse (max: 15 min)
 
 If have time:
 - Static analysis in `slither_report.md`
 - Manual pentesting in `manual_review.md` @Kraiois121
+
+*For the grand oral:*
+- on-chain logging with events
+- off chain tamperproof logging (transparency log)
+- automatic determination of condition fulfilment
+(block time - not enuf transactions/conditions, NFT)
+- run fuzzing with the operation itself completely randomised (run for more than 100 times)
+- be clear in explaining the rules (protocols), emphasise on characteristics of protocol
