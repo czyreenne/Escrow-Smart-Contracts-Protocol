@@ -22,7 +22,7 @@ The instructions below are for running with local Ethereum Node Simulators (*gan
 10. Set deployer address as an environment variable
 (For PS terminals -> `$Env:DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`; For Linux/Mac -> `export DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`)
 11. Input deployer private key when prompted
-12. Input seller address when deploying (`python scripts/deploy.py <seller_address>`)
+12. Input seller address when deploying (`python scripts/deploy.py <seller_address> <timeout>`)
 
 ## Interacting with the Contract
 1. Once the contract has been deployed, set the deployer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) for signing transactions.
