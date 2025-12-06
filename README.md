@@ -36,8 +36,11 @@ Note the following:
 - The functions are not unit tests. This means that attempting a release of funds (`python scripts/interact.py release`) before a deposit (`python scripts/interact.py deposit`) should throw an error/receipt status 0.
 - Some functions like fulfill_conditions may require additional arguments. There should be a message with the required usage.(E.g. `python scripts/interact.py fulfill_conditions idx1 idx2`)
 
-Example of interact.py output [Deposit - Fulfil ALL Conditions - Release]:
-<pre><code>python scripts/interact.py deposit
+## Sample Interaction Flow 
+**deposit -> add condition -> fulfill condition -> check condition fulfilment -> release of funds**
+
+Example of interact.py output [Deposit]:
+<pre><code>python3 scripts/interact.py deposit
 Running deposit workflow
 
 Deposit event test: Buyer deposits to escrow
@@ -45,148 +48,84 @@ Deposit event test: Buyer deposits to escrow
 
  Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 988859355700000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1006991316640000000000
+Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998980692240000000000
+Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 1000000000000000000000
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
 Checking for Deposited event...
-[{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
+[{'buyer': '0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE', 'amount': 1000000000000000000}]
 
 === Full Audit Trail ===
 
 Scenario: deposit
-TX Hash: 354b3052ece58f28ecea8ea24f85c8cecfc77deca7a95c0111f481f960fa0c54
+TX Hash: e8ac07a721868fef25a93aa87dd1e68d8cb11c54d4201d028aba0ca79e411310
 State: 1
-Buyer Balance: 988859355700000000000
-Seller Balance: 1006991316640000000000
+Buyer Balance: 998980692240000000000
+Seller Balance: 1000000000000000000000
 Contract Balance: 1000000000000000000
 Amount Locked: 1000000000000000000
-Events: [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
+Events: [{'buyer': '0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE', 'amount': 1000000000000000000}]
 Status: 1
-------------------------------------------------
-python scripts/interact.py release
-Running release workflow
+------------------------------------------------</code></pre>
 
-Release event test: Seller releases funds
+Example of interact.py output [Add Condition]:
+<pre><code>python3 scripts/interact.py add_conditions "Seller must call fulfill_condition"
+Condition added: Seller must call fulfill_condition
+Added condition event: [{'index': 0, 'description': 'Seller must call fulfill_condition'}]
+Unknown test case: Seller must call fulfill_condition. *Note: just ignore this if you see an output when calling one of the non-main functions
 
+=== Full Audit Trail ===</code></pre>
+
+Example of interact.py output [Fulfill Condition at index 0]:
+<pre><code>python3 scripts/interact.py fulfill_conditions 0
+    Condition 0 fulfilled.
 
  Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 988859355700000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1006990720180000000000
+Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998978267140000000000
+Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 999988667800000000000
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
-Checking for Released event...
+Condition(s) fulfilled
+Unknown test case: 0. *Note: just ignore this if you see an output when calling one of the non-main functions
 
-=== Full Audit Trail ===
+=== Full Audit Trail ===</code></pre>
 
-Scenario: release
-TX Hash: e871c38801ccc10a00d5bfc555845665d4e88006fb33c855fce6191e0f410a7b
-State: 1
-Buyer Balance: 988859355700000000000
-Seller Balance: 1006990720180000000000
-Amount Locked: 1000000000000000000
-Events: []
-Status: 0
-------------------------------------------------
-python scripts/interact.py fulfill_all_conditions
-Fulfilling ALL contract conditions.
-  Condition 0 fulfilled.
-  Condition 1 fulfilled.
-  Condition 2 fulfilled.
-All conditions fulfilled.
+Example of interact.py output [Check Conditions]:
+<pre><code>python3 scripts/interact.py check_conditions
+All conditions are fulfilled
 
+=== Full Audit Trail ===</code></pre>
 
-=== Full Audit Trail ===
-PS C:\Users\Serene Sim\Documents\GitHub\Escrow-Smart-Contracts-Protocol> python scripts/interact.py release
+Example of interact.py output [Release]:
+<pre><code>python3 scripts/interact.py release
 Running release workflow
 
-Release event test: Seller releases funds
-
+Release event test: Contract releases funds
 
  Current Contract State
 State  (0=Init, 1=Funded): 0
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 988856413780000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1007989893760000000000
+Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998978267140000000000
+Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 1000987930200000000000
 Contract balance: 0
 Amount locked: 0
 
 Checking for Released event...
-[{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]
+[{'seller': '0xce2FA53458A0D9dcF1221AbeD6223229090D899D', 'amount': 1000000000000000000}]
 
 === Full Audit Trail ===
 
 Scenario: release
-TX Hash: e90f72e7db91815b918936ea510bc84747c106b618f473cde126b57f5052b6e6
+TX Hash: ea010217d29c05353cbe5f96c6f4523c9f779ed73be7c3a3cb02f63b2c3e7601
 State: 0
-Buyer Balance: 988856413780000000000
-Seller Balance: 1007989893760000000000
+Buyer Balance: 998978267140000000000
+Seller Balance: 1000987930200000000000
 Contract Balance: 0
 Amount Locked: 0
-Events: [{'seller': '0x3bb560C961616430c4f1974243c6a3c0E99B129f', 'amount': 1000000000000000000}]
+Events: [{'seller': '0xce2FA53458A0D9dcF1221AbeD6223229090D899D', 'amount': 1000000000000000000}]
 Status: 1
-------------------------------------------------</code></pre>
-
-Another example of interact.py output [Deposit - Partial Fulfilment and Refund]:
-<pre><code>python scripts/interact.py deposit                                 
-Running deposit workflow
-
-Deposit event test: Buyer deposits to escrow
-
-
- Current Contract State
-State  (0=Init, 1=Funded): 1
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 985825054800000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1007989893760000000000
-Contract balance: 1000000000000000000
-Amount locked: 1000000000000000000
-
-Checking for Deposited event...
-[{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
-
-=== Full Audit Trail ===
-
-Scenario: deposit
-TX Hash: e9a63dfedc5486213f7720bf2dc2931637731ecfc1e918b1e6b6f5d0fb933e66
-State: 1
-Buyer Balance: 985825054800000000000
-Seller Balance: 1007989893760000000000
-Contract Balance: 1000000000000000000
-Amount Locked: 1000000000000000000
-Events: [{'buyer': '0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059', 'amount': 1000000000000000000}]
-Status: 1
-------------------------------------------------
-python scripts/interact.py partial_fulfillment_and_refund:2        
-
-=== Partial Fulfillment Then Refund (Should NOT Succeed) ===
-Fulfilling 2 contract conditions (simulate partial fulfillment).
-  Condition 0 fulfilled.
-  Condition 1 fulfilled.
-Partial fulfill step complete.
-
- Current Contract State
-State  (0=Init, 1=Funded): 1
-Buyer:   0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059 | Balance: 985822542400000000000
-Seller:  0x3bb560C961616430c4f1974243c6a3c0E99B129f | Balance: 1007989893760000000000
-Contract balance: 1000000000000000000
-Amount locked: 1000000000000000000
-
-Refund failed as expected.
-
-=== Full Audit Trail ===
-
-Scenario: partial_fulfillment_and_refund
-TX Hash: a22b26843ae7258ca7eefc0eabaa8b6ff0d5dedd27c3087e9a4e81acc290ad2d
-State: 1
-Buyer Balance: 985822542400000000000
-Seller Balance: 1007989893760000000000
-Contract Balance: 1000000000000000000
-Amount Locked: 1000000000000000000
-Events: []
-Status: 0
-Message: Refund failed as expected.
 ------------------------------------------------</code></pre>
 
 ## Test Scripts
