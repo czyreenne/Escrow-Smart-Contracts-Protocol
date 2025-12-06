@@ -9,40 +9,32 @@ A legally-aware, security-hardened escrow protocol implemented in Vyper for the 
 - Transparent events for auditability
 
 ## Quick Start
+The instructions below are for running with local Ethereum Node Simulators (*ganache*)
 1. Clone this repo
 2. Set up virtual environment (`python -m venv venv`)
 3. Navigate to virtual environment (`venv\Scripts\activate`)
 4. Install dependencies in virtual environment (`pip install vyper` and set up web3 `pip install web3`)
-5. Check that Vyper (`vyper --version`) and Web3 (`pip show web3`) are installed 
-6. [Guide to deploy and test](docs/overview.md)
-7. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`)
-8. Set deployer address as an environment variable (For PS terminals -> `$Env:DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`)
-9. Input deployer private key when prompted
-9. Input seller address, timeout condition and number of conditions when deploying (`python scripts/deploy.py <seller_address> <timeout_seconds> <num_conditions>`)
+5. Check that Vyper (`vyper --version`) and Web3 (`pip show web3`) are installed
+6. In a separate terminal, ensure you have ganache installed (`npm install -g ganache`).
+7. Then, start the local chain on ganache (`ganache`)
+8. [Guide to deploy and test](docs/overview.md)
+9. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`)
+10. Set deployer address as an environment variable
+(For PS terminals -> `$Env:DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`; For Linux/Mac -> `export DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`)
+11. Input deployer private key when prompted
+12. Input seller address when deploying (`python scripts/deploy.py <seller_address>`)
 
-## Testing 
-We identified 2 methods for testing:
-- Using Local Ethereum Node Simulators 
-- Using MetaMask for Testnets
+## Interacting with the Contract
+1. Once the contract has been deployed, set the deployer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) for signing transactions.
+Note: *Seller address should belong to a different test account than the private key test account. In our case, the deployer is the same as the buyer.*
+2. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
+3. Run interact.py - general usage: `python scripts/interact.py NAME_OF_SCENARIO <arguments>`.
+4. To test with a fresh contract / clean state, REDEPLOY the contract with `python scripts/deploy.py <seller_address>`.
 
-Using Local Ethereum Node Simulators:
-1. Install Ganache by Truffle Suite (`npm install -g ganache`)
-2. Start Ganache on a terminal (`ganache`). CLI should display a list of Available Accounts and their corresponding Private Keys.
-3. On another terminal, set deployer private key as one of the private keys available (`$Env:DEPLOYER_PRIVATE_KEY="0xYOUR_PRIVATE_KEY"`)
-4. Run deploy.py (`python scripts/deploy.py 0xSELLER_ADDRESS`). Note: Seller address should belong to a different test account than the private key test account.
-5. Set buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) as OS variables. Note: *In our case, the deployer is the same as the buyer.* Therefore, buyer private keys should belong to the same account used for deployment. Seller private key should be the private key belonging to the same account used for seller address.
-6. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
-7. Run interact.py 
-Usage in for scenarios in general: `python scripts/interact.py NAME_OF_SCENARIO(S)`
-Usage for Refund scenario: `python interact.py partial_fulfillment_and_refund:NUMBER_OF_SCENARIOS_FULFILLED`
-8. REDEPLOY the contract to retest after successful run. *Repeat steps 4 and 7.*
-Note: Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
-
-Examples of commands used/OS variables set:
-- `$Env:DEPLOYER_ADDRESS="0x5AEF5E434CFDca42dcDE0491e1e0FA4ebE506059" (Account 0)` 
-*Might remove the DEPLOYER_PRIVATE_KEY and SELLER_PRIVATE_KEY below*
-- `$Env:DEPLOYER_PRIVATE_KEY="0x4b7ebe9e5c43116f7a8366d8f30302de1ab46fe488daa8aafa6b5c96f8adc523" (Account 0)`
-- `$Env:SELLER_PRIVATE_KEY="0xba2128a3d4eca8c709b933e2fd3460f45f9ee73b213267d33fe54c24d1767727" (Account 1)`
+Note the following:
+- Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
+- The functions are not unit tests. This means that attempting a release of funds (`python scripts/interact.py release`) before a deposit (`python scripts/interact.py deposit`) should throw an error/receipt status 0.
+- Some functions like fulfill_conditions may require additional arguments. There should be a message with the required usage.(E.g. `python scripts/interact.py fulfill_conditions idx1 idx2`)
 
 Example of interact.py output [Deposit - Fulfil ALL Conditions - Release]:
 <pre><code>python scripts/interact.py deposit
@@ -197,6 +189,9 @@ Status: 0
 Message: Refund failed as expected.
 ------------------------------------------------</code></pre>
 
+## Test Scripts
+[Guide to Automated Test Suite](tests/README.md)
+
 ## Closely Related Work
 1. Centralized Escrow Services (e.g., PayPal, traditional banks)
 Centralized escrows rely on manual processes, legal contracts, and trusted third-party intermediaries. While they are familiar and regulated, these services often suffer from slow operations due to paperwork, currency disagreements, and lengthy dispute resolution. Users face high service fees, limited customizability, and opaque transaction records. Furthermore, centralization introduces single-point-of-failure risks, including incompetence or dishonesty by escrow agents, and can lock up funds unnecessarily. As seen with cases involving PayPal, dissatisfied users regularly encounter service frustrations, restricted dispute outcomes, and inconsistent support, demonstrating the limitations of legacy escrow providers.
@@ -207,7 +202,14 @@ Smart contract platforms automate escrow logic with on-chain code, reducing inte
 3. Decentralized Marketplaces (e.g., OpenSea)
 Decentralized marketplace escrows embed basic trade logic within platform protocols, enabling peer-to-peer global asset exchanges without trusted intermediaries. These systems excel in speed, efficiency, and multi-asset/blockchain support, lowering transaction friction and costs. However, their escrow functionalities are typically limited to straightforward buy-sell logic, lacking multi-condition or milestone management. Dispute resolution is minimal or off-chain, and regulatory compliance can be uncertain, especially across jurisdictions. The absence of flexible, programmable condition enforcement makes them less suitable for complex arrangements or high-value regulated transactions. Vulnerabilities and platform exploits further highlight the need for robust security and legal recourse.
 
-4. Other repositories
+4. Other repositories(https://github.com/AleRapchan/escrow-service/tree/master):
+This project is a Solidity-based smart contract implementing the escrow blockchain design pattern, and it can be deployed using Remix IDE or Truffle for local deployment. It works as a proof-of-concept demonstrating the sequential transaction flow required, along with Role-based Access Control (RBAC) patterns. 
+- (a) Escrow agent deploys the smart contract with the buyer's address, seller's address, and transaction value.
+- (b) The buyer sends payment to the contract, which locks the funds in a vault while automatically transferring 1ETH to the agent.
+- (c) After the seller claims to have delivered the product, the buyer can either confirm receipt or deny elivery.
+- (d) If the buyer denies delivery, the escrow agent has the authority to confirm the transaction (releasing funds) or cancelling it (returning funds to buyer) based on the investigation.
+
+Instead of relying on centralized intermediaries (e.g. Escrow Agent) and manual confirmation (from the seller), our project aims to better highlight blockchain's strengths by reflecting more sophisticated condition logic, automatic detection of condition fulfilment, and automatic execution of release/refund operations. 
 
 ## Repo Structure
 - `contracts/`: Vyper code (and interfaces)
