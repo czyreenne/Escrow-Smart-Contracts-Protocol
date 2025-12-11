@@ -36,6 +36,40 @@ Note the following:
 - The functions are not unit tests. This means that attempting a release of funds (`python scripts/interact.py release`) before a deposit (`python scripts/interact.py deposit`) should throw an error/receipt status 0.
 - Some functions like fulfill_conditions may require additional arguments. There should be a message with the required usage.(E.g. `python scripts/interact.py fulfill_conditions idx1 idx2`)
 
+## Example Deployment Output 
+<pre><code>python3 scripts/deployPlaceholder.py 0xB866c2C09fCfC35780c721F2976DA61F176748C1 3600 0x5480fAf8D6d082DBaF3C8D87FaFe117AE62e3F3c 3654279658035655000
+Enter deployer private key: 
+Deployer address: 0x5480faf8d6d082dbaf3c8d87fafe117ae62e3f3c
+Verified: deployment authorized for address 0x5480faf8d6d082dbaf3c8d87fafe117ae62e3f3c
+
+=== Step 1: Deploying ConditionVerifier ===
+ConditionVerifier deployment TX hash: 219be7d0ef84ff996077a47965beff3a82d5f0f6c04caf782be7d221848aa002
+ConditionVerifier deployed at: 0x2C8410e27fed9f00a5E67482c4711f700cd92633
+
+=== Step 2: Creating ETH deposit condition ===
+Create condition TX hash: a3febe8b9135fba8d6295e70e9c9b710358c57c4190cc8828b3cab004497d2ea
+Condition created with ID: 0
+
+=== Step 3: Deploying Escrow ===
+Escrow deployment TX hash: cdf4cceef3ae2afdbc077ab2f20ba68785a4049db4b7214348f957ef3867e8ee
+Escrow deployed at: 0xb12C0cCFCCe36d8597454040c337c53ddF53ba87
+
+ESCROW EVENTS (0xb12C0cCFCCe36d8597454040c337c53ddF53ba87):
+==================================================
+INIT | State: 0
+
+=== Step 4: Saving deployment records ===
+Deployment recorded in testnet.json
+
+=== Deployment Summary ===
+ConditionVerifier: 0x2C8410e27fed9f00a5E67482c4711f700cd92633
+Condition ID: 0
+Escrow: 0xb12C0cCFCCe36d8597454040c337c53ddF53ba87
+Seller: 0xB866c2C09fCfC35780c721F2976DA61F176748C1
+Beneficiary: 0x5480fAf8D6d082DBaF3C8D87FaFe117AE62e3F3c
+Required amount: 3654279658035655000 Wei (3.654279658035655 ETH)
+Timeout: 3600 seconds</pre></code>
+
 ## Sample Interaction Flow 
 **deposit -> add condition -> fulfill condition -> check condition fulfilment -> release of funds**
 
