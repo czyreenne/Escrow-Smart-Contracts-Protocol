@@ -141,7 +141,7 @@ Smart contract platforms automate escrow logic with on-chain code, reducing inte
 3. Decentralized Marketplaces (e.g., OpenSea)
 Decentralized marketplace escrows embed basic trade logic within platform protocols, enabling peer-to-peer global asset exchanges without trusted intermediaries. These systems excel in speed, efficiency, and multi-asset/blockchain support, lowering transaction friction and costs. However, their escrow functionalities are typically limited to straightforward buy-sell logic, lacking multi-condition or milestone management. Dispute resolution is minimal or off-chain, and regulatory compliance can be uncertain, especially across jurisdictions. The absence of flexible, programmable condition enforcement makes them less suitable for complex arrangements or high-value regulated transactions. Vulnerabilities and platform exploits further highlight the need for robust security and legal recourse.
 
-4. Other repositories(https://github.com/AleRapchan/escrow-service/tree/master):
+4. Other repositories (https://github.com/AleRapchan/escrow-service/tree/master):
 This project is a Solidity-based smart contract implementing the escrow blockchain design pattern, and it can be deployed using Remix IDE or Truffle for local deployment. It works as a proof-of-concept demonstrating the sequential transaction flow required, along with Role-based Access Control (RBAC) patterns. 
 - (a) Escrow agent deploys the smart contract with the buyer's address, seller's address, and transaction value.
 - (b) The buyer sends payment to the contract, which locks the funds in a vault while automatically transferring 1ETH to the agent.

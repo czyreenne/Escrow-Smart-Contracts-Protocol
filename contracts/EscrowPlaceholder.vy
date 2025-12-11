@@ -24,6 +24,21 @@ event ConditionAdded:
     index: uint256                          # Index of completed condition
     description: String[100]
 
+# Log outcome of external condition check
+event ExternalConditionChecked:
+    condition_id: uint256
+    verifier: indexed(address)
+    seller: indexed(address)
+    beneficiary: indexed(address)
+    success: bool
+
+# High-level lifecycle marker
+event EscrowStatus:
+    buyer: indexed(address)
+    seller: indexed(address)
+    state: uint8      # 0 = idle/closed, 1 = funded
+    amount: uint256
+
 # Main Players and Rules 
 buyer: public(address)                      # This person pays the seller (gets set when contract starts)
 seller: public(address)                     # This person receives money from the buyer
@@ -31,12 +46,6 @@ timeout: public(uint256)                    # How long before the buyer can get 
 start: public(uint256)                      # When the contract started
 amount: public(uint256)                     # How much money is in the contract
 state: public(uint8)                        # What is happening? 0 = not funded, 1 = funded
-
-# Support for dynamic conditions
-struct Condition:
-    description: String[100]                # A brief description of the condition
-    idx: uint256                            # Index assigned to the condition for ordering
-    fulfilled: bool                         # Tracks the fulfilment status of the condition
 
 defaultCondition: public(Condition)
 conditions: public(Condition[10])
@@ -46,6 +55,12 @@ num_conditions: public(uint256)             # Total conditions required
 condition_verifier: public(address)         # Address of ConditionVerifier contract
 external_condition_id: public(uint256)      # The condition ID to verify
 beneficiary: public(address)                # Third-party beneficiary for external condition
+
+# Support for dynamic conditions
+struct Condition:
+    description: String[100]                # A brief description of the condition
+    idx: uint256                            # Index assigned to the condition for ordering
+    fulfilled: bool                         # Tracks the fulfilment status of the condition
 
 # Interface to interact with ConditionVerifier contract
 interface IConditionVerifier:
@@ -60,14 +75,15 @@ interface IConditionVerifier:
 # What happens when the contract is created 
 @deploy
 def __init__(_seller: address, _timeout: uint256, _condition_verifier: address, _external_condition_id: uint256, _beneficiary: address):
-    self.buyer = msg.sender                 # The person starting the contract is the buyer
-    self.seller = _seller                   # The seller's address
-    self.timeout = _timeout                 # How long before refund is possible
-    self.start = block.timestamp            # Remember when we started
-    self.state = 0                          # Start in 'not funded' state
-    self.condition_verifier = _condition_verifier
-    self.external_condition_id = _external_condition_id
-    self.beneficiary = _beneficiary
+    self.buyer = msg.sender # The person starting/deploying the contract is the buyer
+    self.seller = _seller # The seller's address
+    self.timeout = _timeout # How long before refund is possible
+    self.start = block.timestamp # Remember when we started
+    self.state = 0 # Start in 'not funded' state
+    self.condition_verifier = _condition_verifier # The verifier of the external condition (i.e. the buyer)
+    self.external_condition_id = _external_condition_id # Unique ID for the external condition
+    self.beneficiary = _beneficiary # The party benefitting from the successful fulfilment and execution of contract (i.e. the seller)    
+    log EscrowStatus(self.buyer, self.seller, self.state, 0) # Emit initial status for easier history reconstruction
 
 # Buyer puts money in (deposit) 
 @payable
@@ -79,6 +95,7 @@ def deposit():
     self.amount = msg.value                                         # Save how much was sent
     self.state = 1                                                  # Now we are funded
     log Deposited(buyer=msg.sender, amount=msg.value)               # Announce that a deposit happened
+    log EscrowStatus(self.buyer, self.seller, self.state, self.amount) # Emit initial status for easier history reconstruction
 
 # Allows the buyer to add conditions
 @external
@@ -88,8 +105,9 @@ def add_conditions(desc: String[100]):
     self.conditions[self.num_conditions].description = desc
     self.conditions[self.num_conditions].idx = self.num_conditions
     self.conditions[self.num_conditions].fulfilled = False
-    self.num_conditions += 1                # num_conditions ranges from 1 to 10
-    log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
+    log ConditionAdded(index=self.num_conditions, description=desc)
+    self.num_conditions += 1 # num_conditions ranges from 1 to 10             
+    # log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
 
 # Normally should be automated but for simplicity's sake we include a function that allows us to set conditions to completed.
 # For simplicity's sake: we just let the seller call this.
@@ -155,10 +173,20 @@ def get_num_conditions() -> uint256:
 # Seller can claim money (release) 
 @external
 def release():
-    assert self.state == 1, "contract has not been funded"                                                      # Only if contract is funded 
-    assert msg.sender == self.seller, "permission denied"                                                       # Only the seller can claim
-    assert self._all_conditions_fulfilled(), "not all conditions have been fulfilled"                           # Only if all conditions fulfilled
+    assert self.state == 1, "contract has not been funded"  # Only if contract is funded 
+    assert msg.sender == self.seller, "permission denied"  # Only the seller can claim
+    assert self._all_conditions_fulfilled(), "not all conditions have been fulfilled" # Only if all conditions fulfilled
+                              
     assert self._check_external_condition(), "External condition not fulfilled!"
+
+    # Log external condition result in the state-changing function
+    log ExternalConditionChecked(
+        self.external_condition_id,
+        self.condition_verifier,
+        self.seller,
+        self.beneficiary,
+        external_ok
+    )
 
     # Prevention of REENTRANCY attacks: Change contract state to 'done' BEFORE sending money
     self.state = 0                                          # Mark as done
@@ -170,6 +198,7 @@ def release():
     # Now we send money. Because state is changed first, a sneaky attacker can't call back quickly and steal more.
     send(self.seller, amt)                                  # Send the money to the seller
     log Released(seller=self.seller, amount=amt)            # Announce that money was released
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=self.amount)
 
 # Buyer can get money back if too much time goes by (refund) 
 @external
@@ -187,3 +216,13 @@ def refund():
     # Now it's safe to send the money back
     send(self.buyer, amt)                                   # Send the money back to the buyer
     log Refunded(buyer=self.buyer, amount=amt)              # Announce that a refund happened
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=self.amount) # Announce that the Escrow Status has been updated
+
+# a compact on-chain snapshot for easy printing
+@external
+@view
+def get_escrow_summary() -> (address, address, uint8, uint256, uint256):
+    """
+    Returns: buyer, seller, state, amount, num_conditions
+    """
+    return self.buyer, self.seller, self.state, self.amount, self.num_conditions

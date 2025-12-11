@@ -1,4 +1,5 @@
-# python scripts/deployPlaceholder.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
+# python3 scripts/deployPlaceholder.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
+# sample: python3 scripts/deployPlaceholder.py 0x32Afb90322a7DC67A9d53738F37F4246A5D8380D 3600 0x823b872bD518f9C8251eB30588419356F1a1fd5E 3654279658035655000
 
 import os
 import sys
@@ -6,6 +7,33 @@ import json
 from web3 import Web3
 from datetime import datetime, timezone
 import getpass
+
+# NEW - for logging: Event signatures for printing escrow logs 
+EVENT_SIGNATURES = {
+    'EscrowStatus': Web3.keccak(text="EscrowStatus(address,address,uint8,uint256)").hex(),
+    'Deposited': Web3.keccak(text="Deposited(address,uint256)").hex(), 
+    'ConditionAdded': Web3.keccak(text="ConditionAdded(uint256,string)").hex(),
+    'ConditionFulfilled': Web3.keccak(text="ConditionFulfilled(uint256,string)").hex(),
+    'ExternalConditionChecked': Web3.keccak(text="ExternalConditionChecked(uint256,address,address,address,bool)").hex(),
+    'Released': Web3.keccak(text="Released(address,uint256)").hex(),
+    'Refunded': Web3.keccak(text="Refunded(address,uint256)").hex(),
+}
+
+def print_escrow_events(escrow_address, receipt, escrow_abi, w3):
+    """Minimal pretty-print of escrow events from receipt"""
+    print(f"\nESCROW EVENTS ({escrow_address}):")
+    print("=" * 50)
+    
+    escrow_contract = w3.eth.contract(address=escrow_address, abi=escrow_abi)
+    
+    for log in receipt['logs']:
+        if log['address'].lower() == escrow_address.lower():
+            topics = [topic.hex() for topic in log['topics']]
+            if topics and topics[0] == EVENT_SIGNATURES['EscrowStatus']:
+                print(f"INIT | State: {escrow_contract.events.EscrowStatus().process_log(log)[0]['args']['state']}")
+            elif topics and topics[0] == EVENT_SIGNATURES['Deposited']:
+                amount = int.from_bytes(log['data'][:32], 'big')
+                print(f"DEPOSIT | {w3.from_wei(amount, 'ether')} ETH")
 
 # Ensures that only buyer/deployer can run the script
 private_key = getpass.getpass(prompt="Enter deployer private key: ")
@@ -20,14 +48,8 @@ deployer_address = deployer_account.address.lower().strip()
 print(f"Deployer address: {deployer_address}")
 
 # Check address against a whitelist
-EXPECTED_ADDRESSES = [
-    os.environ.get("DEPLOYER_ADDRESS", "").lower(),
-]
-
-assert deployer_address in EXPECTED_ADDRESSES, (
-    "ERROR: Private key does not match any authorized deployer address."
-)
-
+EXPECTED_ADDRESSES = [os.environ.get("DEPLOYER_ADDRESS", "").lower(),]
+assert deployer_address in EXPECTED_ADDRESSES, ("ERROR: Private key does not match any authorized deployer address.")
 print("Verified: deployment authorized for address", deployer_address)
 
 # Network configuration
@@ -35,14 +57,14 @@ NETWORK_NAME = "ganache"
 
 # Check command-line arguments
 if len(sys.argv) < 5:
-    print("Usage: python scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>")
-    print("Example: python scripts/deploy.py 0x123... 3600 0x456... 1000000000000000000")
+    print("Usage: python scripts/deployPlaceholder.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>")
+    print("Example: python scripts/deployPlaceholder.py 0x123... 3600 0x456... 1000000000000000000")
     sys.exit(1)
 
 seller_address = sys.argv[1]
 timeout = int(sys.argv[2])
 beneficiary_address = sys.argv[3]
-required_amount = int(sys.argv[4])  # In Wei
+required_amount = int(sys.argv[4])  # In wei
 
 # Validate addresses
 assert w3.is_address(seller_address), "Invalid seller address"
@@ -53,12 +75,12 @@ if not deployer_private_key:
     raise Exception("DEPLOYER_PRIVATE_KEY not set in environment")
 
 # ===== STEP 1: Deploy ConditionVerifier =====
+# Note: ConditionVerifier is deployed before Escrow 
 print("\n=== Step 1: Deploying ConditionVerifier ===")
 
 # Load ConditionVerifier ABI and bytecode
 with open('contracts/ConditionVerifier.abi') as f:
     cv_abi = json.load(f)
-
 with open('contracts/ConditionVerifier.bin') as f:
     cv_bytecode = f.read().strip()
 
@@ -150,6 +172,7 @@ print(f"Escrow deployment TX hash: {escrow_tx_hash.hex()}")
 escrow_receipt = w3.eth.wait_for_transaction_receipt(escrow_tx_hash)
 escrow_address = escrow_receipt.contractAddress
 print(f"Escrow deployed at: {escrow_address}")
+print_escrow_events(escrow_address, escrow_receipt, escrow_abi, w3) # NEW: Print escrow deployment events 
 
 # ===== STEP 4: Save deployment records =====
 print("\n=== Step 4: Saving deployment records ===")
