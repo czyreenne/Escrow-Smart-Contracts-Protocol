@@ -14,15 +14,30 @@ event Refunded:
     buyer: address                          # Who got money back
     amount: uint256                         # How much money was refunded
 
-# NEW: track condition status
+# track condition status
 event ConditionFulfilled:
     index: uint256                          # Index of completed condition
     description: String[100]                # Description of condition completed
 
-# NEW: Condition added
+# Condition added
 event ConditionAdded:
     index: uint256                          # Index of completed condition
     description: String[100]
+
+# Log outcome of external condition check
+event ExternalConditionChecked:
+    condition_id: uint256
+    verifier: indexed(address)
+    seller: indexed(address)
+    beneficiary: indexed(address)
+    success: bool
+
+# High-level lifecycle marker
+event EscrowStatus:
+    buyer: indexed(address)
+    seller: indexed(address)
+    state: uint8      # 0 = idle/closed, 1 = funded
+    amount: uint256
 
 # Main Players and Rules 
 buyer: public(address)                      # This person pays the seller (gets set when contract starts)
@@ -32,24 +47,43 @@ start: public(uint256)                      # When the contract started
 amount: public(uint256)                     # How much money is in the contract
 state: public(uint8)                        # What is happening? 0 = not funded, 1 = funded
 
-# NEW: Support for dynamic conditions
+defaultCondition: public(Condition)
+conditions: public(Condition[10])
+num_conditions: public(uint256)             # Total conditions required
+
+# External Condition Verification
+condition_verifier: public(address)         # Address of ConditionVerifier contract
+external_condition_id: public(uint256)      # The condition ID to verify
+beneficiary: public(address)                # Third-party beneficiary for external condition
+
+# Support for dynamic conditions
 struct Condition:
     description: String[100]                # A brief description of the condition
     idx: uint256                            # Index assigned to the condition for ordering
     fulfilled: bool                         # Tracks the fulfilment status of the condition
 
-defaultCondition: public(Condition)
-conditions: public(Condition[10])
-num_conditions: public(uint256)             # Total conditions required
+# Interface to interact with ConditionVerifier contract
+interface IConditionVerifier:
+    def is_condition_fulfilled(condition_id:uint256) -> bool: view
+    def verify_condition_for_parties(
+        condition_id: uint256,
+        expected_creator: address,
+        expected_beneficiary: address # need beneficiary to add context-specific verification to the oracle check, ensuring the external condition applies to the right parties in this escrow
+    ) -> bool: view
+    def get_condition_status(condition_id: uint256) -> (bool, bool, uint256, uint256): view
 
 # What happens when the contract is created 
 @deploy
-def __init__(_seller: address, _timeout: uint256):
-    self.buyer = msg.sender                 # The person starting the contract is the buyer
-    self.seller = _seller                   # The seller's address
-    self.timeout = _timeout                 # How long before refund is possible
-    self.start = block.timestamp            # Remember when we started
-    self.state = 0                          # Start in 'not funded' state
+def __init__(_seller: address, _timeout: uint256, _condition_verifier: address, _external_condition_id: uint256, _beneficiary: address):
+    self.buyer = msg.sender # The person starting/deploying the contract is the buyer
+    self.seller = _seller # The seller's address
+    self.timeout = _timeout # How long before refund is possible
+    self.start = block.timestamp # Remember when we started
+    self.state = 0 # Start in 'not funded' state
+    self.condition_verifier = _condition_verifier # The verifier of the external condition (i.e. the buyer)
+    self.external_condition_id = _external_condition_id # Unique ID for the external condition
+    self.beneficiary = _beneficiary # The party benefitting from the successful fulfilment and execution of contract (i.e. the seller)    
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=0) # Emit initial status for easier history reconstruction
 
 # Buyer puts money in (deposit) 
 @payable
@@ -61,8 +95,9 @@ def deposit():
     self.amount = msg.value                                         # Save how much was sent
     self.state = 1                                                  # Now we are funded
     log Deposited(buyer=msg.sender, amount=msg.value)               # Announce that a deposit happened
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=self.amount) # Emit initial status for easier history reconstruction
 
-# NEW: Allows the buyer to add conditions
+# Allows the buyer to add conditions
 @external
 def add_conditions(desc: String[100]):
     assert msg.sender == self.buyer, "permission denied"
@@ -70,8 +105,9 @@ def add_conditions(desc: String[100]):
     self.conditions[self.num_conditions].description = desc
     self.conditions[self.num_conditions].idx = self.num_conditions
     self.conditions[self.num_conditions].fulfilled = False
-    self.num_conditions += 1                # num_conditions ranges from 1 to 10
-    log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
+    log ConditionAdded(index=self.num_conditions, description=desc)
+    self.num_conditions += 1 # num_conditions ranges from 1 to 10             
+    # log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
 
 # Normally should be automated but for simplicity's sake we include a function that allows us to set conditions to completed.
 # For simplicity's sake: we just let the seller call this.
@@ -88,7 +124,7 @@ def fulfill_condition(idx:uint256):
     self.conditions[idx].fulfilled = True
     log ConditionFulfilled(index=idx, description=self.conditions[idx].description)
 
-# NEW: Check if all conditions are fulfilled. NOTE: restricted by num_conditions not actually checking throughout entire array
+# Check if all conditions are fulfilled. NOTE: restricted by num_conditions not actually checking throughout entire array
 @internal
 @view
 def _all_conditions_fulfilled() -> bool:
@@ -100,21 +136,35 @@ def _all_conditions_fulfilled() -> bool:
             return False
     return True
 
-# NEW: Seller can check if they have fulfilled all conditions
+# NEW: Check external automated condition
+@internal
+@view
+def _check_external_condition() -> bool:
+    if self.condition_verifier == empty(address):
+        return True # No external condition required
+    
+    # Use staticcall to query ConditionVerifier
+    return staticcall IConditionVerifier(self.condition_verifier).verify_condition_for_parties(
+        self.external_condition_id,
+        self.seller,
+        self.beneficiary
+    )
+
+# Seller can check if they have fulfilled all conditions
 @external
 @view
 def all_conditions_fulfilled() -> bool:
     assert msg.sender == self.seller                        # Only seller can check
     return self._all_conditions_fulfilled()
 
-# NEW: Check the details of a specific condition
+# Check the details of a specific condition
 @external
 @view
 def get_condition(idx: uint256) -> (String[100], bool):
     assert idx < self.num_conditions
     return self.conditions[idx].description, self.conditions[idx].fulfilled
 
-# NEW: Check the total number of conditions
+# Check the total number of conditions
 @external
 @view
 def get_num_conditions() -> uint256:
@@ -123,9 +173,22 @@ def get_num_conditions() -> uint256:
 # Seller can claim money (release) 
 @external
 def release():
-    assert self.state == 1, "contract has not been funded"                                                      # Only if contract is funded 
-    assert msg.sender == self.seller, "permission denied"                                                       # Only the seller can claim
-    assert self._all_conditions_fulfilled(), "not all conditions have been fulfilled"                           # Only if all conditions fulfilled
+    assert self.state == 1, "contract has not been funded"  # Only if contract is funded 
+    assert msg.sender == self.seller, "permission denied"  # Only the seller can claim
+    assert self._all_conditions_fulfilled(), "not all conditions have been fulfilled" # Only if all conditions fulfilled
+
+    # Call external condition and store result
+    external_ok: bool = self._check_external_condition()
+    assert external_ok, "External condition not fulfilled!"                              
+
+    # Log external condition result in the state-changing function
+    log ExternalConditionChecked(
+        condition_id=self.external_condition_id,
+        verifier=self.condition_verifier,
+        seller=self.seller,
+        beneficiary=self.beneficiary,
+        success=external_ok
+    )
 
     # Prevention of REENTRANCY attacks: Change contract state to 'done' BEFORE sending money
     self.state = 0                                          # Mark as done
@@ -137,6 +200,7 @@ def release():
     # Now we send money. Because state is changed first, a sneaky attacker can't call back quickly and steal more.
     send(self.seller, amt)                                  # Send the money to the seller
     log Released(seller=self.seller, amount=amt)            # Announce that money was released
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=self.amount)
 
 # Buyer can get money back if too much time goes by (refund) 
 @external
@@ -154,3 +218,13 @@ def refund():
     # Now it's safe to send the money back
     send(self.buyer, amt)                                   # Send the money back to the buyer
     log Refunded(buyer=self.buyer, amount=amt)              # Announce that a refund happened
+    log EscrowStatus(buyer=self.buyer, seller=self.seller, state=self.state, amount=self.amount) # Announce that the Escrow Status has been updated
+
+# a compact on-chain snapshot for easy printing
+@external
+@view
+def get_escrow_summary() -> (address, address, uint8, uint256, uint256):
+    """
+    Returns: buyer, seller, state, amount, num_conditions
+    """
+    return self.buyer, self.seller, self.state, self.amount, self.num_conditions

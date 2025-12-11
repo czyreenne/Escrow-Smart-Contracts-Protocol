@@ -6,11 +6,11 @@
 @dev Supports ETH deposits and can be extended for NFT/token transfers
 '''
 
-# Enum for condition types
-enum ConditionType:
-    ETH_DEPOSIT
-    NFT_TRANSFER  # Future implementation
-    TOKEN_TRANSFER  # Future implementation
+# NEW: Flag for condition types (replaces deprecated enum)
+flag ConditionType:
+    ETH_DEPOSIT # 1
+    # NFT_TRANSFER # 2, Placeholder for future implementation
+    # TOKEN_TRANSFER # 4, Placeholder for future implementation
 
 # Events for transparency
 event ConditionCreated:
