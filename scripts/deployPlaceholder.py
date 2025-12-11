@@ -1,4 +1,4 @@
-# python scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
+# python scripts/deployPlaceholder.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
 
 import os
 import sys
