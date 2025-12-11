@@ -24,16 +24,6 @@ event ConditionAdded:
     index: uint256                          # Index of completed condition
     description: String[100]
 
-# Interface to interact with ConditionVerifier contract
-interface IConditionVerifier:
-    def is_condition_fulfilled(condition_id:uint256) -> bool: view
-    def verify_condition_for_parties(
-        condition_id: uint256,
-        expected_creator: address,
-        expected_beneficiary: address
-    ) -> bool: view
-    def get_condition_status(condition_id: uint256) -> (bool, bool, uint256, uint256): view
-
 # Main Players and Rules 
 buyer: public(address)                      # This person pays the seller (gets set when contract starts)
 seller: public(address)                     # This person receives money from the buyer
@@ -56,6 +46,16 @@ num_conditions: public(uint256)             # Total conditions required
 condition_verifier: public(address)         # Address of ConditionVerifier contract
 external_condition_id: public(uint256)      # The condition ID to verify
 beneficiary: public(address)                # Third-party beneficiary for external condition
+
+# Interface to interact with ConditionVerifier contract
+interface IConditionVerifier:
+    def is_condition_fulfilled(condition_id:uint256) -> bool: view
+    def verify_condition_for_parties(
+        condition_id: uint256,
+        expected_creator: address,
+        expected_beneficiary: address # need beneficiary to add context-specific verification to the oracle check, ensuring the external condition applies to the right parties in this escrow
+    ) -> bool: view
+    def get_condition_status(condition_id: uint256) -> (bool, bool, uint256, uint256): view
 
 # What happens when the contract is created 
 @deploy
