@@ -1,3 +1,6 @@
+# TODO: To update interact.py
+# NOTE: no need to print logged outputs since printing already built into deploy.py script.
+
 import os
 import json
 from web3 import Web3

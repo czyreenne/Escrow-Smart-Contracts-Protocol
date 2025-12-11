@@ -1,14 +1,12 @@
 Not started:
 - Create architecture diagram with draw.io(?) in `architecture-diagram.png`
+- Update interact.py
 
 If have time:
 - Static analysis in `slither_report.md`
 - Manual pentesting in `manual_review.md` @Kraiois121
 
 *For the grand oral:*
-- on-chain logging with events
-- off chain tamperproof logging (transparency log)
-- automatic determination of condition fulfilment
-(block time - not enuf transactions/conditions, NFT)
-- run fuzzing with the operation itself completely randomised (run for more than 100 times)
-- be clear in explaining the rules (protocols), emphasise on characteristics of protocol
+- on-chain logging with events [DONE]
+- automatic determination of condition fulfilment (e.g. block time - not enuf transactions/conditions, NFT) [IN PROGRESS]
+- run fuzzing with the operation itself completely randomised (run for more than 100 times) [NOT STARTED]
