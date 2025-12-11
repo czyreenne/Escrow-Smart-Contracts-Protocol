@@ -103,4 +103,4 @@ def fuzz_iteration():
 
 for i in range(100):
     print(f"=== Fuzz iteration {i} ===")
-    fuzz_iteration()
+    fuzz_iteration() # Right now  only prints to stdout; audit_trail is declared but not yet used. 

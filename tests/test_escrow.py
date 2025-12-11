@@ -62,7 +62,7 @@ def add_conditions(contract, buyer, buyer_priv):
     else:
         print("Condition could not be added.")
 
-# Add Condition with empty description 
+# Add Condition with empty description
 def add_condition_empty(contract, buyer, buyer_priv):
     condition = ""
     add_tx = contract.functions.add_conditions(condition).build_transaction({
@@ -151,6 +151,7 @@ def all_conditions_fulfilled(contract, seller):
         print("Not all conditions are fulfilled. Please check with print_all_conditions()")
 
 # --- TEST 1: Repeated Deposit ---
+# Deposit 1 ETH → Deposit 1 ETH again
 def test_repeated_deposit():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("Testing repeated deposit...")
@@ -163,6 +164,7 @@ def test_repeated_deposit():
         print(e)
 
 # --- TEST 2: Early Release (0 completions)---
+# Deposit → Add condition → Release (no fulfillment)
 def test_early_release():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("Testing early release (0 completions)...")
@@ -179,6 +181,7 @@ def test_early_release():
         print(e)
 
 # --- TEST 3: Edge Timeout ---
+# Deposit → Add condition → Fast-forward → Refund
 def test_edge_timeout():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("Testing edge timeout: Before Timeout...")
@@ -219,6 +222,7 @@ def test_edge_timeout():
         print(e)
 
 # --- TEST 4: Refund After Completion ---
+# Deposit → Add condition → Fulfill → Fast-forward → Refund
 def test_refund_after_completion():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     try:
@@ -235,6 +239,9 @@ def test_refund_after_completion():
         print(e)
 
 # --- TEST 5: Invalid Condition Index + Max Conditions Test + Double Completion ---
+# Deposit → Add 11 conditions → Fulfill invalid index (10 -> 10 spaces filled, index 0-9)
+# Then: Fulfill all 0-9 → Release
+# Then: Fulfill 0 again (double fulfill)
 def test_invalid_index():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     try:
@@ -267,6 +274,7 @@ def test_invalid_index():
         print(e)
 
 # --- TEST 6: Invalid Condition Index ---
+# Add 2 conditions → Fulfill 1 → Release
 def test_partial_completion_release():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     try:
@@ -283,6 +291,8 @@ def test_partial_completion_release():
         print(e)
 
 # --- TEST 7: Zero Conditions Contract ---
+# Deposit → Release (no conditions)
+# Deposit → Fast-forward → Refund (no conditions)
 def test_zero_conditions():
     print("Testing zero condition release")
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
@@ -306,6 +316,7 @@ def test_zero_conditions():
         print(e)
 
 # --- TEST 8: Empty Description ---
+# Add condition with "" (empty string)
 def test_empty_description():
     escrow, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     try:
