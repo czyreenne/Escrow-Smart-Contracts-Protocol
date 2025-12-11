@@ -45,7 +45,7 @@ Condition 0: Random condition | Fulfilled: True
 Condition 1: Random condition | Fulfilled: False</code></pre>
 
 ## Sample Output for tests/fuzz_test.py
-Example of test in fuzz_test.py output:
+Example of test in fuzz_test.py output (deposit value in wei):
 <pre><code>=== Fuzz iteration 92 ===
 Deployment TX hash: 4b09fb924cd8f4eaf25b41897b18003f46d925b979e716527e676dfec113bb55
 Contract deployed at: 0x7b9D0dca55DB319556087b26cDdc959D9ed5c0E6

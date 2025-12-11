@@ -19,7 +19,7 @@ def fuzz_iteration():
     contract_address, escrow_abi = deploy_escrow_contract(seller.address, random.randint(10,5000))
     escrow = w3.eth.contract(address=contract_address, abi = escrow_abi)
     try:
-        value = w3.to_wei(random.uniform(0.000001,10), 'ether')
+        value = w3.to_wei(random.uniform(0.000001,10), 'ether') # randomised amount of 1-10 ETH in wei
         deposit_tx = escrow.functions.deposit().build_transaction({
             "from":buyer.address,
             "value": value,
@@ -36,7 +36,7 @@ def fuzz_iteration():
     # Randomly add between 0 and 10 conditions, some with odd data
     num_conditions = random.randint(0, 10)
     for i in range(num_conditions):
-        desc = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=random.randint(0, 100)))
+        desc = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=random.randint(0, 100))) # randomised k-character string
         try:
             add_tx = escrow.functions.add_conditions(desc).build_transaction({
                 "from": buyer.address,
