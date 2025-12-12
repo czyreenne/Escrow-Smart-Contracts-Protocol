@@ -75,15 +75,16 @@ Required amount: 1 Wei (1E-18 ETH)
 Timeout: 3600 seconds</pre></code>
 
 ## Sample Manual Interaction Flow 
-
+[See here for high-level flow](docs/architecture diagram.png)
 1. Start the bot -> bot listening
 2. Deposit into Escrow.vy
 3. Add condition
 4. Fulfill condition
 5. Check condition fulfilment
 6. Fulfil external condition (deposit_to_verifier)
-7. Bot calls release of funds automatically
-8. Print Escrow Summary
+7. ConditionVerifier emits event that the bot is listening for
+8. Bot calls release of funds automatically
+9. Print Escrow Summary
 
 Example of starting the bot:
 <pre><code>python3 scripts/keeperBot.py
