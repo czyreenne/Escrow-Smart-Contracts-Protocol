@@ -75,7 +75,7 @@ Required amount: 1 Wei (1E-18 ETH)
 Timeout: 3600 seconds</pre></code>
 
 ## Sample Manual Interaction Flow 
-[See here for high-level flow](docs/architecture diagram.png)
+See here for high-level flow: [docs/architecture diagram.png](https://github.com/czyreenne/Escrow-Smart-Contracts-Protocol/blob/main/docs/architecture%20diagram.png)
 1. Start the bot -> bot listening
 2. Deposit into Escrow.vy
 3. Add condition
