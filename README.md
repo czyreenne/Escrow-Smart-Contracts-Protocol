@@ -9,6 +9,8 @@ A legally-aware, security-hardened escrow protocol implemented in Vyper for the 
 - Transparent events for auditability
 
 ## Quick Start
+*python and python3 are used interchangeably below*
+
 The instructions below are for running with local Ethereum Node Simulators (*ganache*)
 1. Clone this repo
 2. Set up virtual environment (`python -m venv venv`)
@@ -18,43 +20,45 @@ The instructions below are for running with local Ethereum Node Simulators (*gan
 6. In a separate terminal, ensure you have ganache installed (`npm install -g ganache`).
 7. Then, start the local chain on ganache (`ganache`)
 8. [Guide to deploy and test](docs/overview.md)
-9. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`)
-10. Set deployer address as an environment variable
+9. Compile Escrow.vy script and get abi (`vyper -f abi contracts/Escrow.vy > contracts/Escrow.abi`) and bytecode (`vyper -f bytecode contracts/Escrow.vy > contracts/Escrow.bin`).
+10. Compile ConditionVerifier.vy script and get abi (`vyper -f abi contracts/ConditionVerifier.vy > contracts/ConditionVerifier.abi`) and bytecode (`vyper -f bytecode contracts/ConditionVerifier.vy > contracts/ConditionVerifier.bin`).
+11. Set deployer address as an environment variable
 (For PS terminals -> `$Env:DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`; For Linux/Mac -> `export DEPLOYER_ADDRESS="0xYOUR_ADDRESS"`)
-11. Input deployer private key when prompted
-12. Input seller address when deploying (`python scripts/deploy.py <seller_address> <timeout>`)
+12. Input deployer private key when prompted
+13. Input seller address when deploying (`python scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>`)
 
 ## Interacting with the Contract
 1. Once the contract has been deployed, set the deployer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) for signing transactions.
 Note: *Seller address should belong to a different test account than the private key test account. In our case, the deployer is the same as the buyer.*
 2. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
-3. Run interact.py - general usage: `python scripts/interact.py NAME_OF_SCENARIO <arguments>`.
-4. To test with a fresh contract / clean state, REDEPLOY the contract with `python scripts/deploy.py <seller_address>`.
+3. For automatic verification of condition fulfilment and release of Escrow funds, start a new terminal and start the keeper bot for it to listen for transactions. (`python scripts/keeperBot.py`). For manual testing, you can skip this step. 
+4. Run interact.py - general usage: `python scripts/interact.py NAME_OF_SCENARIO <arguments>`. **Note that if the bot is listening, there is no need to manually call for release of Escrow funds with python scripts/interact.py release*
+5. To test with a fresh contract / clean state, REDEPLOY the contract with `python scripts/deploy.py <seller_address>`.
 
-Note the following:
+**Note the following:**
 - Stateful and Immutable property of smart contracts. Once your contract finishes a workflow (like deposit and release), its state can’t be reset or reused, so running the same tests again won’t work unless you deploy a fresh contract instance.
 - The functions are not unit tests. This means that attempting a release of funds (`python scripts/interact.py release`) before a deposit (`python scripts/interact.py deposit`) should throw an error/receipt status 0.
 - Some functions like fulfill_conditions may require additional arguments. There should be a message with the required usage.(E.g. `python scripts/interact.py fulfill_conditions idx1 idx2`)
 
 ## Example Deployment Output 
-<pre><code>python3 scripts/deployPlaceholder.py 0xB866c2C09fCfC35780c721F2976DA61F176748C1 3600 0x5480fAf8D6d082DBaF3C8D87FaFe117AE62e3F3c 3654279658035655000
+<pre><code>python3 scripts/deploy.py 0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7 3600 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9 1
 Enter deployer private key: 
-Deployer address: 0x5480faf8d6d082dbaf3c8d87fafe117ae62e3f3c
-Verified: deployment authorized for address 0x5480faf8d6d082dbaf3c8d87fafe117ae62e3f3c
+Deployer address: 0xc2595e5c48af7f2ab168376b2566ba5155b52ee1
+Verified: deployment authorized for address 0xc2595e5c48af7f2ab168376b2566ba5155b52ee1
 
 === Step 1: Deploying ConditionVerifier ===
-ConditionVerifier deployment TX hash: 219be7d0ef84ff996077a47965beff3a82d5f0f6c04caf782be7d221848aa002
-ConditionVerifier deployed at: 0x2C8410e27fed9f00a5E67482c4711f700cd92633
+ConditionVerifier deployment TX hash: c6693460a768f55c898d1c9082f1157aca4f32e930c22cb739b7696ecbc78bca
+ConditionVerifier deployed at: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
 
 === Step 2: Creating ETH deposit condition ===
-Create condition TX hash: a3febe8b9135fba8d6295e70e9c9b710358c57c4190cc8828b3cab004497d2ea
+Create condition TX hash: 07df66238b00f4f27dc0e5fb74feeb77d3916add12bf0ea3d9d9ced34af22902
 Condition created with ID: 0
 
 === Step 3: Deploying Escrow ===
-Escrow deployment TX hash: cdf4cceef3ae2afdbc077ab2f20ba68785a4049db4b7214348f957ef3867e8ee
-Escrow deployed at: 0xb12C0cCFCCe36d8597454040c337c53ddF53ba87
+Escrow deployment TX hash: f53b8834f3fcf57416d0942e52896619dbd85a639461e4f0207c1cdce9e13a57
+Escrow deployed at: 0x3351a5e950044A26849E1D51d279a57b3442B82F
 
-ESCROW EVENTS (0xb12C0cCFCCe36d8597454040c337c53ddF53ba87):
+ESCROW EVENTS (0x3351a5e950044A26849E1D51d279a57b3442B82F):
 ==================================================
 INIT | State: 0
 
@@ -62,19 +66,51 @@ INIT | State: 0
 Deployment recorded in testnet.json
 
 === Deployment Summary ===
-ConditionVerifier: 0x2C8410e27fed9f00a5E67482c4711f700cd92633
+ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
 Condition ID: 0
-Escrow: 0xb12C0cCFCCe36d8597454040c337c53ddF53ba87
-Seller: 0xB866c2C09fCfC35780c721F2976DA61F176748C1
-Beneficiary: 0x5480fAf8D6d082DBaF3C8D87FaFe117AE62e3F3c
-Required amount: 3654279658035655000 Wei (3.654279658035655 ETH)
+Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Seller: 0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7
+Beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
+Required amount: 1 Wei (1E-18 ETH)
 Timeout: 3600 seconds</pre></code>
 
-## Sample Interaction Flow 
-**deposit -> add condition -> fulfill condition -> check condition fulfilment -> release of funds**
+## Sample Manual Interaction Flow 
+
+1. Start the bot -> bot listening
+2. Deposit into Escrow.vy
+3. Add condition
+4. Fulfill condition
+5. Check condition fulfilment
+6. Fulfil external condition (deposit_to_verifier)
+7. Bot calls release of funds automatically
+8. Print Escrow Summary
+
+Example of starting the bot:
+<pre><code>python3 scripts/keeperBot.py
+============================================================
+ESCROW KEEPER BOT INITIALIZATION
+============================================================
+Enter seller private key: 
+Keeper bot initialized for seller: 0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7
+
+Loaded 1 escrow contract(s)
+ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+
+============================================================
+🤖 ESCROW KEEPER BOT STARTED
+============================================================
+Polling interval: 5 seconds
+Press Ctrl+C to stop
+============================================================
+
+✓ Event filters set up
+  Monitoring: ConditionFulfilled events from 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1</code></pre>
 
 Example of interact.py output [Deposit]:
 <pre><code>python3 scripts/interact.py deposit
+Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+External Condition ID: 0
 Running deposit workflow
 
 Deposit event test: Buyer deposits to escrow
@@ -82,85 +118,125 @@ Deposit event test: Buyer deposits to escrow
 
  Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998980692240000000000
-Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 1000000000000000000000
+Buyer:   0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1 | Balance: 991469611380000000000
+Seller:  0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7 | Balance: 1001941660559999999876
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xb8c877ef0e381a56db810b0e75d4802a6ac24373b86d1226f6d982db42cb122e') and logIndex: 1 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
 Checking for Deposited event...
-[{'buyer': '0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE', 'amount': 1000000000000000000}]
+[{'buyer': '0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1', 'amount': 1000000000000000000}]
 
 === Full Audit Trail ===
 
 Scenario: deposit
-TX Hash: e8ac07a721868fef25a93aa87dd1e68d8cb11c54d4201d028aba0ca79e411310
+TX Hash: b8c877ef0e381a56db810b0e75d4802a6ac24373b86d1226f6d982db42cb122e
 State: 1
-Buyer Balance: 998980692240000000000
-Seller Balance: 1000000000000000000000
+Buyer Balance: 991469611380000000000
+Seller Balance: 1001941660559999999876
 Contract Balance: 1000000000000000000
 Amount Locked: 1000000000000000000
-Events: [{'buyer': '0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE', 'amount': 1000000000000000000}]
+Events: [{'buyer': '0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1', 'amount': 1000000000000000000}]
 Status: 1
 ------------------------------------------------</code></pre>
 
 Example of interact.py output [Add Condition]:
-<pre><code>python3 scripts/interact.py add_conditions "Seller must call fulfill_condition"
-Condition added: Seller must call fulfill_condition
-Added condition event: [{'index': 0, 'description': 'Seller must call fulfill_condition'}]
-Unknown test case: Seller must call fulfill_condition. *Note: just ignore this if you see an output when calling one of the non-main functions
+<pre><code>python3 scripts/interact.py add_conditions "Deliver funds"
+Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+External Condition ID: 0
+Condition added: Deliver funds
+Added condition event: [{'index': 0, 'description': 'Deliver funds'}]
+Unknown test case: Deliver funds. *Note: just ignore this if you see an output when calling one of the non-main functions
+
+Available commands:
+  deposit, add_conditions, print_all_conditions, fulfill_conditions
+  check_conditions, release, incomplete_and_refund
+  deposit_to_verifier, verify_external_condition
+  get_condition_details, escrow_summary
 
 === Full Audit Trail ===</code></pre>
 
 Example of interact.py output [Fulfill Condition at index 0]:
 <pre><code>python3 scripts/interact.py fulfill_conditions 0
+Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+External Condition ID: 0
     Condition 0 fulfilled.
 
  Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998978267140000000000
-Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 999988667800000000000
+Buyer:   0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1 | Balance: 991467645360000000000
+Seller:  0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7 | Balance: 1001930811359999999876
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
 Condition(s) fulfilled
 Unknown test case: 0. *Note: just ignore this if you see an output when calling one of the non-main functions
 
+Available commands:
+  deposit, add_conditions, print_all_conditions, fulfill_conditions
+  check_conditions, release, incomplete_and_refund
+  deposit_to_verifier, verify_external_condition
+  get_condition_details, escrow_summary
+
 === Full Audit Trail ===</code></pre>
 
 Example of interact.py output [Check Conditions]:
 <pre><code>python3 scripts/interact.py check_conditions
+Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+External Condition ID: 0
 All conditions are fulfilled
 
 === Full Audit Trail ===</code></pre>
 
-Example of interact.py output [Release]:
-<pre><code>python3 scripts/interact.py release
-Running release workflow
+Example of interact.py output [deposit_to_verifier]:
+<pre><code>python3 scripts/interact.py deposit_to_verifier
+Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+External Condition ID: 0
 
-Release event test: Contract releases funds
-
- Current Contract State
-State  (0=Init, 1=Funded): 0
-Buyer:   0x2b3351971771aB2E21eF3f67C5b5f52D26F999AE | Balance: 998978267140000000000
-Seller:  0xce2FA53458A0D9dcF1221AbeD6223229090D899D | Balance: 1000987930200000000000
-Contract balance: 0
-Amount locked: 0
-
-Checking for Released event...
-[{'seller': '0xce2FA53458A0D9dcF1221AbeD6223229090D899D', 'amount': 1000000000000000000}]
+=== Depositing to ConditionVerifier===
+Condition ID: 0
+Required Amount: 1E-18 ETH
+Beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
+TX Hash: a74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847
+✅ Deposit successful!
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 0 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 1 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
+✅ External condition automatically fulfilled!
+   Event: AttributeDict({'condition_id': 0, 'condition_type': 1, 'timestamp': 1765515173})
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 2 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
+💸 ETH forwarded to beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
 
 === Full Audit Trail ===
+</code></pre>
 
-Scenario: release
-TX Hash: ea010217d29c05353cbe5f96c6f4523c9f779ed73be7c3a3cb02f63b2c3e7601
-State: 0
-Buyer Balance: 998978267140000000000
-Seller Balance: 1000987930200000000000
-Contract Balance: 0
-Amount Locked: 0
-Events: [{'seller': '0xce2FA53458A0D9dcF1221AbeD6223229090D899D', 'amount': 1000000000000000000}]
-Status: 1
-------------------------------------------------</code></pre>
+Example of automated release (same terminal the bot was listening on):
+<pre><code>✓ Event filters set up
+  Monitoring: ConditionFulfilled events from 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+
+🔔 NEW EVENT: ConditionFulfilled
+   Condition ID: 0
+   Timestamp: 2025-12-12 05:52:57
+
+🤖 ATTEMPTING AUTO-RELEASE
+   Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
+   Seller: 0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7
+   ✓ Pre-check passed
+   📤 Release TX sent: 557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0x557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c') and logIndex: 0 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
+/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0x557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c') and logIndex: 2 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
+  return callback(fn(*args, **kwargs))
+   ✅ RELEASE SUCCESSFUL!
+      Amount: 1 ETH
+      Gas used: 74692</code></pre>
 
 ## Test Scripts
 [Guide to Automated Test Suite](tests/README.md)
