@@ -1,6 +1,3 @@
-Not started:
-- Create architecture diagram with draw.io(?) in `architecture-diagram.png`
-
 *For the grand oral:*
 - on-chain logging with events [DONE]
 - adjust manual tests to cover external condition [NOT STARTED]
@@ -8,9 +5,12 @@ Not started:
 
 Minor issues (doesn't affect functionality / functions are not used):
 - Suppress/address mismatched ABI warnings (because there are events from 2 different contracts)
-- Some interact.py functions don't have error messages
+- Some interact.py functions don't have error messages. Add pre-simulation to show revert reasons. 
 - get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum)
 
 Future work:
 - Implement NFT transfer ConditionType
 - Implement Token Transfer (ERC-777) ConditionType
+- Keeper bot: Add historical event processing (currently only monitors "latest" block)
+- Keeper bot: Add persistence to track processed conditions across restarts
+- Design: Allow seller to create conditions instead of deployer (requires 2-step deployer)
