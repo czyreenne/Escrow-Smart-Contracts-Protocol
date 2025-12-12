@@ -1,18 +1,16 @@
 Not started:
 - Create architecture diagram with draw.io(?) in `architecture-diagram.png`
-- Update interact.py
-
-If have time:
-- Static analysis in `slither_report.md`
-- Manual pentesting in `manual_review.md` @Kraiois121
 
 *For the grand oral:*
 - on-chain logging with events [DONE]
-- automatic determination of condition fulfilment (e.g. block time - not enuf transactions/conditions, NFT) [IN PROGRESS]
+- adjust manual tests to cover external condition [NOT STARTED]
 - run fuzzing with the operation itself completely randomised (run for more than 100 times) [NOT STARTED]
-- update README
 
-MINOR ISSUES:
-- Suppress/address mismatched ABI warnings (doesn't affect functionality, just that there are events from 2 different contracts)
+Minor issues (doesn't affect functionality / functions are not used):
+- Suppress/address mismatched ABI warnings (because there are events from 2 different contracts)
 - Some interact.py functions don't have error messages
-- get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum, not required for testing)
+- get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum)
+
+Future work:
+- Implement NFT transfer ConditionType
+- Implement Token Transfer (ERC-777) ConditionType
