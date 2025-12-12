@@ -14,13 +14,30 @@ audit_trail = []
 # Load deployment info from testnet.json 
 with open("deployments/testnet.json") as f:
     data = json.load(f)
-contract_info = data["deployments"][-1]  # Use latest deployment
 
-contract_address = contract_info["address"]
+# Get the last two deployments (ConditionVerifier + Escrow)
+deployments = data["deployments"]
+escrow_info = None
+cv_info = None 
 
-# Load ABI 
+# Find the most recent Escrow and its linked COnditionVerifier
+for deployment in reversed(deployments):
+    if deployment['contract'] == 'Escrow' and escrow_info is None:
+        escrow_info = deployment
+        # Get linked ConditionVerifier address
+        cv_address = deployment['linkedContracts']['conditionVerifier']
+        condition_id = deployment['linkedContracts']['externalConditionId']
+        required_amount = deployment['linkedContracts']['requiredAmount']
+        beneficiary = deployment['linkedContracts']['beneficiary']
+
+escrow_address = escrow_info['address']
+
+# Load ABIs
 with open('contracts/Escrow.abi') as f:
     escrow_abi = json.load(f)
+
+with open('contracts/ConditionVerifier.abi') as f:
+    cv_abi = json.load(f)
 
 # Connect to Ganache 
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
@@ -35,7 +52,12 @@ buyer = w3.eth.account.from_key(buyer_priv)
 seller = w3.eth.account.from_key(seller_priv)
 
 # Attach to the deployed contract 
-escrow = w3.eth.contract(address=contract_address, abi=escrow_abi)
+escrow = w3.eth.contract(address=escrow_address, abi=escrow_abi)
+condition_verifier = w3.eth.contract(address=cv_address, abi=cv_abi)
+
+print(f"Connected to Escrow: {escrow_address}")
+print(f"Connected to ConditionVerifier: {cv_address}")
+print(f"External Condition ID: {condition_id}")
 
 # Utility function: Print escrow state & balances
 def get_state():
@@ -49,7 +71,7 @@ def get_state():
         'buyer_balance': w3.eth.get_balance(buyer_addr),
         'seller': seller_addr,
         'seller_balance': w3.eth.get_balance(seller_addr),
-        'contract_balance': w3.eth.get_balance(contract_address),
+        'contract_balance': w3.eth.get_balance(escrow_address),
         'amount_locked': escrow.functions.amount().call()
     }
 
@@ -254,6 +276,139 @@ def run_incomplete_and_refund():
         })
         print(f"Refund attempt failed due to other error: {e}")
 
+# ===== NEW: ConditionVerifier Interaction Functions =====
+
+def deposit_to_verifier():
+    """
+    Seller deposits ETH to ConditionVerifier to fulfill external condition
+    """
+    try:
+        print(f"\n=== Depositing to ConditionVerifier===")
+        print(f"Condition ID: {condition_id}")
+        print(f"Required Amount: {w3.from_wei(required_amount, 'ether')} ETH")
+        print(f"Beneficiary: {beneficiary}")
+
+        # Build deposit transaction
+        deposit_tx = condition_verifier.functions.deposit_eth(condition_id).build_transaction({
+            "from": seller.address,
+            "value": required_amount,  # Use the required amount from deployment
+            "nonce": w3.eth.get_transaction_count(seller.address),
+            "gas": 300000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        
+        signed_deposit = w3.eth.account.sign_transaction(deposit_tx, seller_priv)
+        tx_hash = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
+        print(f"TX Hash: {tx_hash.hex()}")
+        
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        
+        if receipt.status == 1:
+            print("✅ Deposit successful!")
+            
+            # Check for ConditionFulfilled event
+            fulfilled_events = condition_verifier.events.ConditionFulfilled().process_receipt(receipt)
+            if fulfilled_events:
+                print("✅ External condition automatically fulfilled!")
+                print(f"   Event: {fulfilled_events[0]['args']}")
+            else:
+                print("⚠️  Condition not yet fulfilled (may need more deposits)")
+                
+            # Print beneficiary confirmation
+            forwarded_events = condition_verifier.events.EthForwarded().process_receipt(receipt)
+            if forwarded_events:
+                print(f"💸 ETH forwarded to beneficiary: {forwarded_events[0]['args']['beneficiary']}")
+        else:
+            print("❌ Deposit failed")
+            
+    except Exception as e:
+        print(f"Error depositing to verifier: {e}")
+
+def verify_external_condition():
+    """Check if external condition is fulfilled"""
+    try:
+        print(f"\n=== Checking External Condition Status ===")
+        print(f"Condition ID: {condition_id}")
+        
+        # Use simple check instead of get_condition_status
+        fulfilled = condition_verifier.functions.is_condition_fulfilled(condition_id).call()
+        
+        print(f"Fulfilled: {fulfilled}")
+        
+        # Verify for parties (what Escrow contract checks)
+        seller_addr = escrow.functions.seller().call()
+        buyer_addr = escrow.functions.buyer().call()
+        
+        verified = condition_verifier.functions.verify_condition_for_parties(
+            condition_id,
+            buyer_addr,  # Changed to buyer (the creator)
+            beneficiary
+        ).call()
+        
+        print(f"✓ Verified for Escrow parties: {verified}")
+        
+        if verified:
+            print("✅ External condition ready - release() will succeed")
+        else:
+            print("❌ External condition not met - release() will fail")
+            
+        return verified
+        
+    except Exception as e:
+        print(f"Error verifying condition: {e}")
+        return False
+
+def get_external_condition_details():
+    """Get full details of the external condition"""
+    print("\n⚠️  get_condition_details() temporarily disabled due to flag/enum issue")
+    print("Use verify_external_condition() instead")
+    return
+    
+    # Original code commented out for now
+    # try:
+    #     details = condition_verifier.functions.get_condition_details(condition_id).call()
+    #     ...
+
+# def get_condition_details():
+#     """Get full details of the external condition"""
+#     try:
+#         print(f"\n=== External Condition Details ===")
+        
+#         details = condition_verifier.functions.get_condition_details(condition_id).call()
+        
+#         print(f"Condition Type: {details[0]}")  # ConditionType enum value
+#         print(f"Creator: {details[1]}")
+#         print(f"Beneficiary: {details[2]}")
+#         print(f"Required Amount: {w3.from_wei(details[3], 'ether')} ETH")
+#         print(f"Received Amount: {w3.from_wei(details[4], 'ether')} ETH")
+#         print(f"Fulfilled: {details[5]}")
+#         print(f"Disputed: {details[6]}")
+#         print(f"Created At: {datetime.fromtimestamp(details[7])}")
+        
+#         if details[8] > 0:
+#             print(f"Fulfilled At: {datetime.fromtimestamp(details[8])}")
+#         else:
+#             print("Fulfilled At: Not yet")
+            
+    # except Exception as e:
+    #     print(f"Error getting condition details: {e}")
+
+
+def print_escrow_summary():
+    """Print compact escrow summary"""
+    try:
+        buyer_addr, seller_addr, state, amount, num_conds = escrow.functions.get_escrow_summary().call()
+        
+        print(f"\n=== Escrow Summary ===")
+        print(f"Buyer: {buyer_addr}")
+        print(f"Seller: {seller_addr}")
+        print(f"State: {state} (0=Not Funded, 1=Funded)")
+        print(f"Amount Locked: {w3.from_wei(amount, 'ether')} ETH")
+        print(f"Manual Conditions: {num_conds}")
+        
+    except Exception as e:
+        print(f"Error getting summary: {e}")
+
 if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
     #     python scripts/interact.py deposit           # (just runs deposit)
@@ -301,8 +456,26 @@ if __name__ == "__main__":
                 run_release()
             elif test == "incomplete_and_refund":
                 run_incomplete_and_refund()
+            
+            # NEW: ConditionVerifier commands
+            elif test == 'deposit_to_verifier':
+                deposit_to_verifier()
+            
+            elif test == 'verify_external_condition':
+                verify_external_condition()
+            
+            elif test == 'get_external_condition_details':
+                get_external_condition_details()
+            
+            elif test == 'escrow_summary':
+                print_escrow_summary()
             else:
                 print(f"Unknown test case: {test}. *Note: just ignore this if you see an output when calling one of the non-main functions")
+                print("\nAvailable commands:") # Added list of available commands
+                print("  deposit, add_conditions, print_all_conditions, fulfill_conditions")
+                print("  check_conditions, release, incomplete_and_refund")
+                print("  deposit_to_verifier, verify_external_condition")
+                print("  get_condition_details, escrow_summary")
 
     # Print comprehensive audit trail 
     print("\n=== Full Audit Trail ===")

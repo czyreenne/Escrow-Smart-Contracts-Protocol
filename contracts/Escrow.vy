@@ -105,9 +105,9 @@ def add_conditions(desc: String[100]):
     self.conditions[self.num_conditions].description = desc
     self.conditions[self.num_conditions].idx = self.num_conditions
     self.conditions[self.num_conditions].fulfilled = False
-    log ConditionAdded(index=self.num_conditions, description=desc)
-    self.num_conditions += 1 # num_conditions ranges from 1 to 10             
-    # log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
+    self.num_conditions += 1                # num_conditions ranges from 1 to 10
+    log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
+
 
 # Normally should be automated but for simplicity's sake we include a function that allows us to set conditions to completed.
 # For simplicity's sake: we just let the seller call this.
@@ -146,7 +146,7 @@ def _check_external_condition() -> bool:
     # Use staticcall to query ConditionVerifier
     return staticcall IConditionVerifier(self.condition_verifier).verify_condition_for_parties(
         self.external_condition_id,
-        self.seller,
+        self.buyer,
         self.beneficiary
     )
 
