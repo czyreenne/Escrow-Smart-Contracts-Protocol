@@ -10,3 +10,9 @@ If have time:
 - on-chain logging with events [DONE]
 - automatic determination of condition fulfilment (e.g. block time - not enuf transactions/conditions, NFT) [IN PROGRESS]
 - run fuzzing with the operation itself completely randomised (run for more than 100 times) [NOT STARTED]
+- update README
+
+MINOR ISSUES:
+- Suppress/address mismatched ABI warnings (doesn't affect functionality, just that there are events from 2 different contracts)
+- Some interact.py functions don't have error messages
+- get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum, not required for testing)
