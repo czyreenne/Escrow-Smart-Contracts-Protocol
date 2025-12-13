@@ -4,7 +4,7 @@
 - run fuzzing with the operation itself completely randomised (run for more than 100 times) [NOT STARTED]
 
 Minor issues (doesn't affect functionality / functions are not used):
-- Suppress/address mismatched ABI warnings (because there are events from 2 different contracts)
+- Suppress/address mismatched ABI warnings (because there are events from 2 different contracts) [DONE]
 - Some interact.py functions don't have error messages. Add pre-simulation to show revert reasons. 
 - get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum)
 

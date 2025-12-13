@@ -108,7 +108,6 @@ def add_conditions(desc: String[100]):
     self.num_conditions += 1                # num_conditions ranges from 1 to 10
     log ConditionAdded(index=self.num_conditions-1, description=self.conditions[self.num_conditions-1].description)
 
-
 # Normally should be automated but for simplicity's sake we include a function that allows us to set conditions to completed.
 # For simplicity's sake: we just let the seller call this.
 # In a sense, the condition just becomes: Seller must call fulfill_condition(idx:uint256) function.

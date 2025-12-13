@@ -1,5 +1,5 @@
 # python3 scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
-# sample: python3 scripts/deploy.py 0xB866c2C09fCfC35780c721F2976DA61F176748C1 3600 0x5480fAf8D6d082DBaF3C8D87FaFe117AE62e3F3c 3654279658035655000
+# sample: python3 scripts/deploy.py 0xF14c714ED081b5B65FF34Ed1280ff60D51cAE5aC 3600 0x97D44B9e2B9DD9D8A64d2A380128733D2fE2E077 3654279658035655000
 
 import os
 import sys
@@ -235,5 +235,5 @@ print(f"Condition ID: {condition_id}")
 print(f"Escrow: {escrow_address}")
 print(f"Seller: {seller_address}")
 print(f"Beneficiary: {beneficiary_address}")
-print(f"Required amount: {required_amount} Wei ({w3.from_wei(required_amount, 'ether')} ETH)")
+print(f"Required amount: {required_amount} wei ({w3.from_wei(required_amount, 'ether')} ETH)")
 print(f"Timeout: {timeout} seconds")

@@ -150,14 +150,6 @@ def deposit_eth(condition_id: uint256):
             timestamp=block.timestamp
         )
 
-# Alternative: Default function for receiving ETH without specifying condition
-# This could be used if you want a simpler single-condition-per-contract model
-# @external
-# @payable
-# def __default__():
-#     """Automatically triggered when ETH sent without calling a function"""
-#     # Handle default ETH receipt logic here
-
 # Raise a dispute (only creator or beneficiary can dispute)
 @external
 def raise_dispute(condition_id: uint256, reason: String[200]):

@@ -175,7 +175,7 @@ class EscrowKeeperBot:
                 'gasPrice': self.w3.to_wei('20', 'gwei')
             })
             
-            # Sign and send transaction
+            # Sign and send transaction (for integrity)
             signed_tx = self.w3.eth.account.sign_transaction(
                 release_tx,
                 private_key=self.seller_account.key
