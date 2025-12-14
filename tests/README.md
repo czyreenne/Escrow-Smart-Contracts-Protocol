@@ -46,16 +46,31 @@ Condition 1: Random condition | Fulfilled: False</code></pre>
 
 ## Sample Output for tests/fuzz_test.py
 Example of test in fuzz_test.py output (deposit value in wei):
-<pre><code>=== Fuzz iteration 92 ===
-Deployment TX hash: 4b09fb924cd8f4eaf25b41897b18003f46d925b979e716527e676dfec113bb55
-Contract deployed at: 0x7b9D0dca55DB319556087b26cDdc959D9ed5c0E6
-Deposit of 3654279658035655000 succeeded!
-Condition of: h5qgek2thsmufbhedi78b0cx6suz2uqgz3irr7p356jltk2iklogm2z2mkqe780qnilbiuv3z8gicapwxzg00p added!
-Condition of: a5kufpken215d23ateus0i8vwqbr8vpgul61hnvjek06z7t3suozsjl0tnf5t3 added!
-Condition 0 fulfilled.
-Condition 1 fulfilled.
-Condition 2 fulfilled.
-Condition 3 fulfilled.
-Release succeeded!
-Release failed.
-Release failed.</code></pre>
+<pre><code>=== Fuzz iteration 149 ===
+ConditionVerifier deployed at: 0xEdD6B6EAdE8a1f603431AcBbE02514d8AFaF6781
+Condition created with ID: 0
+Escrow deployed at: 0x6F064dA3df181D90d255BD48a485619B691F1422
+🌀 Running 9 randomized ops (from 13 total ops)...
+[1867] add_conditions → ✅...
+✅ add_conditions succeeded
+PRE-SIM FAIL add_conditions: generic revert (likely auth/state)
+[1868] add_conditions → ❌PRE-SIM FAIL...
+[1869] add_conditions → ✅...
+✅ add_conditions succeeded
+PRE-SIM ERROR release: {'message': 'VM Exception while processing transaction: invalid opcode', 'stack': 'CallError: VM 
+Exception while processing transaction: invalid opcode\n    at Blockchain.simulateTransaction (C:\\Users\\Serene Sim\\AppData\\Roaming\\npm\\node_modules\\ganache\\dist\\node\\1.js:2:100650)', 'code': -32000, 'name': 'CallError', 'data': '0x'}
+[1870] release → ❌PRE-SIM FAIL...
+[1871] deposit → ✅...
+✅ deposit succeeded
+[1872] fulfill_condition → ✅...
+✅ fulfill_condition succeeded
+PRE-SIM FAIL fulfill_condition: generic revert (likely auth/state)
+[1873] fulfill_condition → ❌PRE-SIM FAIL...
+PRE-SIM ERROR deposit: {'message': 'VM Exception while processing transaction: invalid opcode', 'stack': 'CallError: VM 
+Exception while processing transaction: invalid opcode\n    at Blockchain.simulateTransaction (C:\\Users\\Serene Sim\\AppData\\Roaming\\npm\\node_modules\\ganache\\dist\\node\\1.js:2:100650)', 'code': -32000, 'name': 'CallError', 'data': '0x'}
+[1874] deposit → ❌PRE-SIM FAIL...
+PRE-SIM ERROR release: {'message': 'VM Exception while processing transaction: invalid opcode', 'stack': 'CallError: VM 
+Exception while processing transaction: invalid opcode\n    at Blockchain.simulateTransaction (C:\\Users\\Serene Sim\\AppData\\Roaming\\npm\\node_modules\\ganache\\dist\\node\\1.js:2:100650)', 'code': -32000, 'name': 'CallError', 'data': '0x'}
+[1875] release → ❌PRE-SIM FAIL...
+📊 Iteration success rate: 25.0%
+=== Iteration complete ===</code></pre>
