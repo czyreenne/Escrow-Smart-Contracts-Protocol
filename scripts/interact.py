@@ -427,30 +427,25 @@ def run_release():
 
 # ii. Refund: Incomplete fulfillment then refund before release
 def run_incomplete_and_refund():
-    print("\n=== Incomplete and Refund (Should NOT Succeed if running interact.py with no specifiers) ===")
+    print("Running refund workflow")
+    print("\nIncomplete fulfilment and refund test: Funds are refunded to buyer, as seller does not fulfill conditions before timeout\n")
 
     # Fast-forward time past timeout
     w3.provider.make_request("evm_increaseTime", [3601])
     w3.provider.make_request("evm_mine", [])
 
-    # Now attempt refund as buyer
+    # PRE-SIMULATION FIRST (catches specific errors BEFORE gas waste)
     try:
-        refund_tx = escrow.functions.refund().build_transaction({
-            "from": buyer.address,
-            "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
-        })
-        signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
-        tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
-        rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
-        state_after = get_state()
-        print_state(state_after)
-        if rcpt_refund.status== 1:
-            print("Refund succeeded!")
-        else:
-            print("Refund failed. Transaction reverted.")
-    except ContractLogicError as ex:
+        # Simulation with proper context
+        call_opts = {
+            'from': buyer.address,
+            'gas': 500000,
+            'gasPrice': w3.to_wei('20', 'gwei')
+        }
+        escrow.functions.refund().call(call_opts)
+        print("✓ Pre-check passed for run_incomplete_and_refund()")
+    except ContractLogicError as sim_ex:
+        print(f"❌ PRE-SIM FAIL refund: {sim_ex}")
         current_state = get_state()
         fulfilled = []
         num_conditions = escrow.functions.get_num_conditions().call()
@@ -458,10 +453,49 @@ def run_incomplete_and_refund():
             _desc, is_fulfilled = escrow.functions.get_condition(i).call()
             if is_fulfilled:
                 fulfilled.append(i)
-        print(f"Refund failed due to contract logic: {ex}\nFulfilled conditions at failure: {fulfilled}")
-    except Exception as e:
+        print(f"Current state: {current_state}")
+        print(f"Fulfilled conditions: {fulfilled}")
+        return  # Exit early - no point sending doomed tx
+    except Exception as ex:
+        print(f"⚠️ Release pre-check error (non-logic): {ex}")
+        return
+    
+    # Now attempt refund as buyer (ONLY if sim passes)
+    try:
+        refund_tx = escrow.functions.refund().build_transaction({
+            "from": buyer.address,
+            "nonce": w3.eth.get_transaction_count(buyer.address),
+            "gas": 500000,  # ↑ Higher gas limit
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
+        tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
+        print(f"Tx sent: {tx_hash_refund.hex()}")
+        
+        rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
+        state_after = get_state()
+        print_state(state_after)
+        
+        if rcpt_refund.status == 1:
+            print("✅ Refund succeeded!")
+        else:
+            print("❌ Refund failed. Transaction reverted.")
+            
+    except ContractLogicError as ex:
+        print(f"❌ Refund failed due to contract logic: {ex}")
         current_state = get_state()
-        print(f"Refund attempt failed due to other error: {e}")
+        fulfilled = []
+        num_conditions = escrow.functions.get_num_conditions().call()
+        for i in range(num_conditions):
+            _desc, is_fulfilled = escrow.functions.get_condition(i).call()
+            if is_fulfilled:
+                fulfilled.append(i)
+        print(f"Current state: {current_state}")
+        print(f"Fulfilled conditions at failure: {fulfilled}")
+    except Exception as e:
+        print(f"❌ Refund attempt failed due to other error: {e}")
+        current_state = get_state()
+        print(f"Current state: {current_state}")
 
 """ Archive """
 def get_external_condition_details():
@@ -627,6 +661,8 @@ if __name__ == "__main__":
                 run_deposit()
             elif test == 'release':
                 run_release() 
+            elif test == 'refund':
+                run_incomplete_and_refund()
             
             # NEW: ConditionVerifier commands
             elif test == 'deposit_to_verifier':
