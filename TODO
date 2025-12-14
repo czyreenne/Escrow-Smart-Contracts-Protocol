@@ -5,8 +5,8 @@
 
 Minor issues (doesn't affect functionality / functions are not used):
 - Suppress/address mismatched ABI warnings (because there are events from 2 different contracts) [DONE]
-- Some interact.py functions don't have error messages. Add pre-simulation to show revert reasons. 
-- get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum)
+- Some interact.py functions don't have error messages. Add pre-simulation to show revert reasons. [DONE - Added pre-sim to save gas on failed transactions irl.]
+- get_condition_details and get_condition_status don't work correctly (some Opcode issue maybe due to flag/enum) [DEPRIORITISED]
 
 Future work:
 - Implement NFT transfer ConditionType
