@@ -81,10 +81,17 @@ See here for high-level flow: [docs/architecture diagram.png](https://github.com
 3. Add condition
 4. Fulfill condition
 5. Check condition fulfilment
-6. Fulfil external condition (deposit_to_verifier)
+6. Deposit and Fulfil external condition (deposit_to_verifier)
 7. ConditionVerifier emits event that the bot is listening for
 8. Bot calls release of funds automatically
-9. Print Escrow Summary
+9. Print Escrow Summary and/or Full Audit Trail
+
+- python3 scripts/interact.py deposit
+- python3 scripts/interact.py add_conditions "deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF" (deposit funds to beneficiary)
+- (for verification) python3 scripts/interact.py print_all_conditions
+- python3 scripts/interact.py fulfill_conditions 0
+- python3 scripts/interact.py deposit_to_verifier
+- python3 scripts/interact.py full_audit
 
 Example of starting the bot:
 <pre><code>python3 scripts/keeperBot.py
@@ -238,6 +245,38 @@ Example of automated release (same terminal the bot was listening on):
    ✅ RELEASE SUCCESSFUL!
       Amount: 1 ETH
       Gas used: 74692</code></pre>
+
+Example of interact.py output [Full Audit Trail]:
+<pre><code>python3 scripts/interact.py full_audit
+0x429c1b306ba868301cdfefd29310ccb6f8a9772da6b28b370016ed9050f9c15e
+Connected to Escrow: 0x50E70A4685486Ce9eCC900913c2D42A577Da7855
+Connected to ConditionVerifier: 0xB8ED5D40707C304FfeC2e82b0f7389650847242b
+External Condition ID: 0
+
+🔍 EVENT DECODER (0x50E70A4685486Ce9eCC900913c2D42A577Da7855):
+================================================================================
+ABI Event: Deposited            → 2da466a7b24304f47e87fa2e1e5a81b9831ce54fec19055ce277ca2f39ba42c4  
+ABI Event: Released             → b21fb52d5749b80f3182f8c6992236b5e5576681880914484d7f4c9b062e619e  
+ABI Event: Refunded             → d7dee2702d63ad89917b6a4da9981c90c4d24f8c2bdfd64c604ecae57d8d0651  
+ABI Event: ConditionFulfilled   → c7104caeb6f835c836dbbc04d0ccee00c51e89a718def631c9d0e20878ccdc80  
+ABI Event: ConditionAdded       → a1cf80a32c29ea13fb276c75b3196c5610dad18c0bb8053eac8336b200889bf4  
+ABI Event: ExternalConditionChecked → f1ea5a2eaecc05cf34f347a10bc0efac75cbf98bb6f9685c82b8a74b22933293
+ABI Event: EscrowStatus         → 8abb8eb32bea36df9bd1cf5605f44e11854ea29cef2ec948a458421eae631af7  
+
+Found 4 logs:
+[ 0] ✅ EscrowStatus         | Block 87
+     Sig: 8abb8eb32bea36df9bd1...
+     Topic1: 00000000000000000000...
+     Topic2: 00000000000000000000...
+[ 1] ✅ Deposited            | Block 88
+     Sig: 2da466a7b24304f47e87...
+[ 2] ✅ EscrowStatus         | Block 88
+     Sig: 8abb8eb32bea36df9bd1...
+     Topic1: 00000000000000000000...
+     Topic2: 00000000000000000000...
+[ 3] ✅ ConditionAdded       | Block 89
+     Sig: a1cf80a32c29ea13fb27...
+================================================================================</pre></code>
 
 ## Test Scripts
 [Guide to Automated Test Suite](tests/README.md)

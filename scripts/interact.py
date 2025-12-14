@@ -23,9 +23,6 @@ import sys
 import warnings
 from web3.exceptions import MismatchedABI
 
-# Set up audit trail collector 
-audit_trail = []
-
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
@@ -159,14 +156,6 @@ def run_deposit():
             state_dict = get_state()
             print_state(state_dict)
             print(f"❌ Deposit pre-check reverted: {ex}")
-            audit_trail.append({
-                "step": "deposit",
-                "tx_hash": None,
-                "events": [],
-                "state": state_dict,
-                "status": 0,
-                "message": f"Pre-check failed: {ex}",
-            })
             return
         except Exception as ex:
             print(f"⚠️ Deposit pre-check error (non-logic): {ex}")
@@ -189,14 +178,6 @@ def run_deposit():
         deposited_events = get_events("Deposited", tx_hash_deposit)
         print("Checking for Deposited event...")
         print(deposited_events)
-
-        audit_trail.append({
-            "step": "deposit",
-            "tx_hash": tx_hash_deposit.hex(),
-            "events": deposited_events,
-            "state": state_dict,
-            "status": rcpt_deposit.status
-        })
     except ContractLogicError as ex:
         state_dict = get_state()
         print_state(state_dict)
@@ -206,171 +187,7 @@ def run_deposit():
         print_state(state_dict)
         print(f"Deposit attempt failed due to other error: {e}")
 
-# 2. Seller releases funds (claim) 
-def run_release():
-    try:
-        print("Running release workflow")
-        print("\nRelease event test: Seller releases funds\n")
-
-        # Pre-simulate release
-        try:
-            escrow.functions.release().call({
-                "from": seller.address
-            })
-            print("✓ Pre-check passed for release()")
-        except ContractLogicError as ex:
-            state_dict = get_state()
-            print_state(state_dict)
-            print(f"❌ Release pre-check reverted: {ex}")
-            audit_trail.append({
-                "step": "release",
-                "tx_hash": None,
-                "events": [],
-                "state": state_dict,
-                "status": 0,
-                "message": f"Pre-check failed: {ex}",
-            })
-            return
-        except Exception as ex:
-            print(f"⚠️ Release pre-check error (non-logic): {ex}")
-            return
-
-        release_tx = escrow.functions.release().build_transaction({
-            "from": seller.address,
-            "nonce": w3.eth.get_transaction_count(seller.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
-        })
-        signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
-        tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
-        rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
-
-        state_dict = get_state()
-        print_state(state_dict)
-        released_events = get_events("Released", tx_hash_release)
-        print("Checking for Released event...")
-        print(released_events)
-
-        audit_trail.append({
-            "step": "release",
-            "tx_hash": tx_hash_release.hex(),
-            "events": released_events,
-            "state": state_dict,
-            "status": rcpt_release.status
-        })
-    except ContractLogicError as ex:
-        state_dict = get_state()
-        print_state(state_dict)
-        print(f"Release failed due to contract logic: {ex}")
-    except Exception as e:
-        state_dict = get_state()
-        print_state(state_dict)
-        print(f"Release attempt failed due to other error: {e}")
-
-# 3. Partial fulfillment then refund before release
-def run_incomplete_and_refund():
-    print("Running partial fulfilment and refund workflow")
-    print("\nPartial fulfilment and refund event test: Seller does not fulfil conditions completely and tries to release funds\n")
-
-    # Fast-forward time past timeout
-    w3.provider.make_request("evm_increaseTime", [3601])
-    w3.provider.make_request("evm_mine", [])
-
-    # Pre-check: simulate refund
-    try:
-        escrow.functions.refund().call({
-            "from": buyer.address,
-        })
-        print("✓ Pre-check passed for refund()")
-    except ContractLogicError as ex:
-        current_state = get_state()
-        print_state(current_state)
-        fulfilled = []
-        num_conditions = escrow.functions.get_num_conditions().call()
-        for i in range(num_conditions):
-            _desc, is_fulfilled = escrow.functions.get_condition(i).call()
-            if is_fulfilled:
-                fulfilled.append(i)
-        audit_trail.append({
-            "step": "incomplete_and_refund",
-            "tx_hash": None,
-            "state": current_state,
-            "status": 0,
-            "events": [],
-            "message": f"Refund pre-check failed: {ex}; fulfilled conditions: {fulfilled}",
-        })
-        print(f"❌ Refund pre-check reverted: {ex}\nFulfilled conditions at failure: {fulfilled}")
-        return
-    except Exception as e:
-        current_state = get_state()
-        print_state(current_state)
-        audit_trail.append({
-            "step": "incomplete_and_refund",
-            "tx_hash": None,
-            "state": current_state,
-            "status": 0,
-            "events": [],
-            "message": f"Refund pre-check error: {e}",
-        })
-        print(f"⚠️ Refund pre-check error (non-logic): {e}")
-        return
-
-    # Now attempt refund as buyer
-    try:
-        refund_tx = escrow.functions.refund().build_transaction({
-            "from": buyer.address,
-            "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
-        })
-        signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
-        tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
-        rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
-        state_after = get_state()
-        print_state(state_after)
-        if rcpt_refund.status == 1:
-            print("Refund succeeded!")
-        else:
-            print("Refund failed. Transaction reverted.")
-        audit_trail.append({
-            "step": "incomplete_and_refund",
-            "tx_hash": tx_hash_refund.hex(),
-            "state": state_after,
-            "status": rcpt_refund.status,
-            "events": get_events("Refunded", tx_hash_refund)
-        })
-    except ContractLogicError as ex:
-        current_state = get_state()
-        print_state(current_state)
-        fulfilled = []
-        num_conditions = escrow.functions.get_num_conditions().call()
-        for i in range(num_conditions):
-            _desc, is_fulfilled = escrow.functions.get_condition(i).call()
-            if is_fulfilled:
-                fulfilled.append(i)
-        audit_trail.append({
-            "step": "incomplete_and_refund",
-            "tx_hash": None,
-            "state": current_state,
-            "status": 0,
-            "events": [],
-            "message": f"Refund failed due to contract logic: {ex}; fulfilled conditions: {fulfilled}",
-        })
-        print(f"Refund failed due to contract logic: {ex}\nFulfilled conditions at failure: {fulfilled}")
-    except Exception as e:
-        current_state = get_state()
-        print_state(current_state)
-        audit_trail.append({
-            "step": "incomplete_and_refund",
-            "tx_hash": None,
-            "state": current_state,
-            "status": 0,
-            "events": [],
-            "message": f"Refund attempt failed due to other error: {e}",
-        })
-        print(f"Refund attempt failed due to other error: {e}")
-
-# 4. Add internal conditions 
+# 2. Add internal conditions 
 def add_conditions(description):
     print("Running add internal conditions workflow")
     print("\nAdd internal conditions test: Buyer adds internal conditions.\n")
@@ -384,14 +201,6 @@ def add_conditions(description):
         state_dict = get_state()
         print_state(state_dict)
         print(f"❌ add_conditions pre-check reverted: {ex}")
-        audit_trail.append({
-            "step": "add_conditions",
-            "tx_hash": None,
-            "events": [],
-            "state": state_dict,
-            "status": 0,
-            "message": f"Pre-check failed: {ex}",
-        })
         return
     except Exception as ex:
         print(f"⚠️ add_conditions pre-check error (non-logic): {ex}")
@@ -410,15 +219,8 @@ def add_conditions(description):
     events = get_events("ConditionAdded", tx_hash_add)
     print("Added condition event:", events)
     state_dict = get_state()
-    audit_trail.append({
-        "step": "add_conditions",
-        "tx_hash": tx_hash_add.hex(),
-        "events": events,
-        "state": state_dict,
-        "status": rcpt_add.status,
-    })
 
-# 5. Fulfil specific conditions 
+# 3. Fulfil specific conditions 
 # NEW: Seller can fulfill specific conditions specified by the index in the input array
 def fulfill_conditions(indices):
     print("Running fulfill internal conditions workflow")
@@ -439,14 +241,6 @@ def fulfill_conditions(indices):
             print(f"✓ Pre-check passed for fulfill_condition({idx2})")
         except ContractLogicError as ex:
             print(f"❌ fulfill_condition({idx2}) pre-check reverted: {ex}")
-            audit_trail.append({
-                "step": f"fulfill_condition_{idx2}",
-                "tx_hash": None,
-                "events": [],
-                "state": get_state(),
-                "status": 0,
-                "message": f"Pre-check failed for idx {idx2}: {ex}",
-            })
             continue
         except Exception as ex:
             print(f"⚠️ fulfill_condition({idx2}) pre-check error (non-logic): {ex}")
@@ -464,13 +258,6 @@ def fulfill_conditions(indices):
             rcpt_fulfill = w3.eth.wait_for_transaction_receipt(tx_hash_fulfill)
             print(f"    Condition {idx2} fulfilled.")
             state_after = get_state()
-            audit_trail.append({
-                "step": f"fulfill_condition_{idx2}",
-                "tx_hash": tx_hash_fulfill.hex(),
-                "events": [],  # add event decoding if you have a ConditionFulfilled event
-                "state": state_after,
-                "status": rcpt_fulfill.status,
-            })
         except Exception as ex:
             print(f"Error fulfilling condition {idx2}: {ex} ")
 
@@ -480,7 +267,7 @@ def fulfill_conditions(indices):
 
 """ For EXTERNAL conditions """
 # NEW: ConditionVerifier Interaction Functions 
-# 5. Seller deposits ETH to fulfil external condition, keeperBot automatically verifies fulfilment 
+# 4. Seller deposits ETH to fulfil external condition, keeperBot automatically verifies fulfilment 
 def deposit_to_verifier():
     """
     Seller deposits ETH to ConditionVerifier to fulfill external condition
@@ -552,11 +339,10 @@ def deposit_to_verifier():
                 print(f"💸 ETH forwarded to beneficiary: {forwarded_events[0]['args']['beneficiary']}")
         else:
             print("❌ Deposit failed")
-            
     except Exception as e:
         print(f"Error depositing to verifier: {e}")
 
-# 6. Manual verification of external condition instead of by keeperBot agent
+# 5. Manual verification of external condition instead of by keeperBot agent
 def verify_external_condition():
     """
     Only for manual triggering of verification for external workflow: Verify that external condition is fulfilled
@@ -586,19 +372,105 @@ def verify_external_condition():
         if verified:
             print("✅ External condition ready - release() will succeed")
         else:
-            print("❌ External condition not met - release() will fail")
-            
+            print("❌ External condition not met - release() will fail")   
         return verified
         
     except Exception as e:
-        print(f"Error verifying condition: {e}")
+        print(f"Error depositing to verifier: {e}")
         return False
 
+""" Overall """
+# i. Seller releases funds (claim) 
+def run_release():
+    try:
+        print("Running release workflow")
+        print("\nRelease event test: Seller releases funds\n")
+
+        # Pre-simulate release
+        try:
+            escrow.functions.release().call({
+                "from": seller.address
+            })
+            print("✓ Pre-check passed for release()")
+        except ContractLogicError as ex:
+            state_dict = get_state()
+            print_state(state_dict)
+            print(f"❌ Release pre-check reverted: {ex}")
+            return
+        except Exception as ex:
+            print(f"⚠️ Release pre-check error (non-logic): {ex}")
+            return
+
+        release_tx = escrow.functions.release().build_transaction({
+            "from": seller.address,
+            "nonce": w3.eth.get_transaction_count(seller.address),
+            "gas": 200000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
+        tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
+        rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
+
+        state_dict = get_state()
+        print_state(state_dict)
+        released_events = get_events("Released", tx_hash_release)
+        print("Checking for Released event...")
+        print(released_events)
+    except ContractLogicError as ex:
+        state_dict = get_state()
+        print_state(state_dict)
+        print(f"Release failed due to contract logic: {ex}")
+    except Exception as e:
+        state_dict = get_state()
+        print_state(state_dict)
+        print(f"Release attempt failed due to other error: {e}")
+
+# ii. Refund: Incomplete fulfillment then refund before release
+def run_incomplete_and_refund():
+    print("\n=== Incomplete and Refund (Should NOT Succeed if running interact.py with no specifiers) ===")
+
+    # Fast-forward time past timeout
+    w3.provider.make_request("evm_increaseTime", [3601])
+    w3.provider.make_request("evm_mine", [])
+
+    # Now attempt refund as buyer
+    try:
+        refund_tx = escrow.functions.refund().build_transaction({
+            "from": buyer.address,
+            "nonce": w3.eth.get_transaction_count(buyer.address),
+            "gas": 200000,
+            "gasPrice": w3.to_wei("20", "gwei")
+        })
+        signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
+        tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
+        rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
+        state_after = get_state()
+        print_state(state_after)
+        if rcpt_refund.status== 1:
+            print("Refund succeeded!")
+        else:
+            print("Refund failed. Transaction reverted.")
+    except ContractLogicError as ex:
+        current_state = get_state()
+        fulfilled = []
+        num_conditions = escrow.functions.get_num_conditions().call()
+        for i in range(num_conditions):
+            _desc, is_fulfilled = escrow.functions.get_condition(i).call()
+            if is_fulfilled:
+                fulfilled.append(i)
+        print(f"Refund failed due to contract logic: {ex}\nFulfilled conditions at failure: {fulfilled}")
+    except Exception as e:
+        current_state = get_state()
+        print(f"Refund attempt failed due to other error: {e}")
+
+""" Archive """
 def get_external_condition_details():
     """Get full details of the external condition"""
-    print("\n⚠️  get_condition_details() temporarily disabled due to flag/enum issue")
-    print("Use verify_external_condition() instead")
-    return
+    try:
+        print("\n⚠️  get_condition_details() temporarily disabled due to flag/enum issue")
+        print("Use verify_external_condition() instead")
+    except Exception as e:
+        return
     
     # Original code commented out for now
     # try:
@@ -644,6 +516,73 @@ def print_escrow_summary():
     except Exception as e:
         print(f"Error getting summary: {e}")
 
+def generate_event_signature(event):
+    """Generate Ethereum event signature from ABI"""
+    name = event['name']
+    inputs = event['inputs']
+    
+    # Build signature: "EventName(type1,type2,...)"
+    arg_types = []
+    for input in inputs:
+        arg_types.append(input['type'])
+    
+    sig_text = f"{name}({','.join(arg_types)})"
+    return Web3.keccak(text=sig_text).hex()
+
+def print_complete_audit_trail(escrow_address):
+    """Decode events using manual ABI parsing"""
+    print(f"\n🔍 EVENT DECODER ({escrow_address}):")
+    print("=" * 80)
+    
+    # Load ABI
+    with open('contracts/Escrow.abi', 'r') as f:
+        abi = json.load(f)
+    
+    # Generate ALL event signatures
+    event_sigs = {}
+    for item in abi:
+        if item['type'] == 'event':
+            event_name = item['name']
+            sig = generate_event_signature(item)
+            event_sigs[sig] = event_name
+            print(f"ABI Event: {event_name:<20} → {sig}")
+    
+    # Get recent logs
+    current_block = w3.eth.block_number
+    logs = w3.eth.get_logs({
+        'address': escrow_address,
+        'fromBlock': max(0, current_block - 20),
+        'toBlock': current_block
+    })
+    
+    print(f"\nFound {len(logs)} logs:")
+    
+    for i, log in enumerate(logs):
+        try:
+            topics = log['topics']
+            if not topics:
+                print(f"[{i:2d}] ❓ NO TOPICS")
+                continue
+            
+            # Match topic[0] to generated signature
+            sig = topics[0].hex()
+            event_name = event_sigs.get(sig, "UNKNOWN")
+            
+            print(f"[{i:2d}] ✅ {event_name:<20} | Block {log['blockNumber']}")
+            print(f"     Sig: {sig[:20]}...")
+            
+            # Show indexed params
+            if len(topics) > 1:
+                print(f"     Topic1: {topics[1].hex()[:20]}...")
+            if len(topics) > 2:
+                print(f"     Topic2: {topics[2].hex()[:20]}...")
+                
+        except Exception as e:
+            print(f"[{i:2d}] ❌ ERROR: {e}")
+    
+    print("=" * 80)
+
+
 if __name__ == "__main__":
     # Usage: `python scripts/interact.py NAME_OF_STEP`
     #     python scripts/interact.py deposit           # (just runs deposit)
@@ -664,8 +603,7 @@ if __name__ == "__main__":
         run_deposit()
         num_conditions = escrow.functions.get_num_conditions().call()
         fulfill_conditions(list(range(num_conditions)))  # This fulfills all
-        run_release()
-        run_incomplete_and_refund()
+        # run_release()
     else:
         for test in tests_to_run:
             if test == 'add_conditions':
@@ -688,9 +626,7 @@ if __name__ == "__main__":
             elif test == 'deposit':
                 run_deposit()
             elif test == 'release':
-                run_release()
-            elif test == "incomplete_and_refund":
-                run_incomplete_and_refund()
+                run_release() 
             
             # NEW: ConditionVerifier commands
             elif test == 'deposit_to_verifier':
@@ -702,27 +638,19 @@ if __name__ == "__main__":
             elif test == 'get_external_condition_details':
                 get_external_condition_details()
             
+            # Summaries and Audits
             elif test == 'escrow_summary':
                 print_escrow_summary()
+
+            elif test == 'full_audit':
+                print_complete_audit_trail(escrow_address)
+
             else:
                 print(f"Unknown test case: {test}. *Note: just ignore this if you see an output when calling one of the non-main functions")
                 print("\nAvailable commands:") # Added list of available commands
                 print("  deposit, add_conditions, print_all_conditions, fulfill_conditions")
-                print("  check_conditions, release, incomplete_and_refund")
+                print("  check_conditions, release")
                 print("  deposit_to_verifier, verify_external_condition")
                 print("  get_condition_details, escrow_summary")
 
-    # Print comprehensive audit trail 
-    print("\n=== Full Audit Trail ===")
-    for step in audit_trail:
-        print(f"\nScenario: {step['step']}")
-        print(f"TX Hash: {step['tx_hash']}")
-        print(f"State: {step['state']['state']}")
-        print(f"Buyer Balance: {step['state']['buyer_balance']}")
-        print(f"Seller Balance: {step['state']['seller_balance']}")
-        print(f"Contract Balance: {step['state']['contract_balance']}")
-        print(f"Amount Locked: {step['state']['amount_locked']}")
-        print(f"Events: {step.get('events', [])}")
-        print(f"Status: {step.get('status')}")
-        if 'message' in step: print(f"Message: {step['message']}")
-        print("------------------------------------------------")
+
