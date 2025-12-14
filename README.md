@@ -28,9 +28,9 @@ The instructions below are for running with local Ethereum Node Simulators (*gan
 13. Input seller address when deploying (`python scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>`)
 
 ## Interacting with the Contract
-1. Once the contract has been deployed, set the deployer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) for signing transactions.
-Note: *Seller address should belong to a different test account than the private key test account. In our case, the deployer is the same as the buyer.*
-2. Verify set environment variables (`echo $Env:DEPLOYER_PRIVATE_KEY`, `echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
+1. Once the contract has been deployed, set the buyer private key (`$Env:BUYER_PRIVATE_KEY="0xBUYER_PRIVATE_KEY"`) and seller private key (`$Env:SELLER_PRIVATE_KEY="0xSELLER_PRIVATE_KEY"`) for signing transactions.
+Note: *Seller address should belong to a different test account than the private key test account. In our case, the deployer is the same as the buyer.* Set deployer private key (`$Env:DEPLOYER_PRIVATE_KEY="0xDEPLOYER_PRIVATE_KEY"`) as well.
+2. Verify set environment variables (`echo $Env:BUYER_PRIVATE_KEY`, `echo $Env:SELLER_PRIVATE_KEY`)
 3. For automatic verification of condition fulfilment and release of Escrow funds, start a new terminal and start the keeper bot for it to listen for transactions. (`python scripts/keeperBot.py`). For manual testing, you can skip this step. 
 4. Run interact.py - general usage: `python scripts/interact.py NAME_OF_SCENARIO <arguments>`. **Note that if the bot is listening, there is no need to manually call for release of Escrow funds with python scripts/interact.py release*
 5. To test with a fresh contract / clean state, REDEPLOY the contract with `python scripts/deploy.py <seller_address>`.
@@ -136,8 +136,6 @@ Amount locked: 1000000000000000000
 Checking for Deposited event...
 [{'buyer': '0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1', 'amount': 1000000000000000000}]
 
-=== Full Audit Trail ===
-
 Scenario: deposit
 TX Hash: b8c877ef0e381a56db810b0e75d4802a6ac24373b86d1226f6d982db42cb122e
 State: 1
@@ -164,7 +162,7 @@ Available commands:
   deposit_to_verifier, verify_external_condition
   get_condition_details, escrow_summary
 
-=== Full Audit Trail ===</code></pre>
+</code></pre>
 
 Example of interact.py output [Fulfill Condition at index 0]:
 <pre><code>python3 scripts/interact.py fulfill_conditions 0
@@ -189,7 +187,7 @@ Available commands:
   deposit_to_verifier, verify_external_condition
   get_condition_details, escrow_summary
 
-=== Full Audit Trail ===</code></pre>
+</code></pre>
 
 Example of interact.py output [Check Conditions]:
 <pre><code>python3 scripts/interact.py check_conditions
@@ -198,9 +196,9 @@ Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
 External Condition ID: 0
 All conditions are fulfilled
 
-=== Full Audit Trail ===</code></pre>
+</code></pre>
 
-Example of interact.py output [deposit_to_verifier]:
+Example of interact.py output [Deposit to Verifier]:
 <pre><code>python3 scripts/interact.py deposit_to_verifier
 Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
 Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
@@ -222,7 +220,6 @@ TX Hash: a74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847
   return callback(fn(*args, **kwargs))
 💸 ETH forwarded to beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
 
-=== Full Audit Trail ===
 </code></pre>
 
 Example of automated release (same terminal the bot was listening on):

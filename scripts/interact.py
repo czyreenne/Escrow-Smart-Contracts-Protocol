@@ -166,8 +166,8 @@ def run_deposit():
             "from": buyer.address,
             "value": w3.to_wei("1", "ether"),  # 1 ETH deposit
             "nonce": w3.eth.get_transaction_count(buyer.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
+            "gas": 500000,
+            "gasPrice": w3.to_wei("1", "gwei")
         })
         signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
         tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
@@ -209,8 +209,8 @@ def add_conditions(description):
     tx_add = escrow.functions.add_conditions(description).build_transaction({
         "from": buyer.address,
         "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 2000000,
-        "gasPrice": w3.to_wei("20", "gwei"),
+        "gas": 5000000,
+        "gasPrice": w3.to_wei("1", "gwei"),
     })
     signed_add = w3.eth.account.sign_transaction(tx_add, buyer_priv)
     tx_hash_add = w3.eth.send_raw_transaction(signed_add.raw_transaction)
@@ -250,8 +250,8 @@ def fulfill_conditions(indices):
             tx = escrow.functions.fulfill_condition(idx2).build_transaction({
                 "from": seller.address,
                 "nonce": w3.eth.get_transaction_count(seller.address),
-                "gas": 100000,
-                "gasPrice": w3.to_wei("200", "gwei")
+                "gas": 500000,
+                "gasPrice": w3.to_wei("1", "gwei")
             })
             signed_fulfill = w3.eth.account.sign_transaction(tx, seller_priv)
             tx_hash_fulfill = w3.eth.send_raw_transaction(signed_fulfill.raw_transaction)
@@ -306,8 +306,8 @@ def deposit_to_verifier():
             "from": seller.address,
             "value": required_amount,  # Use the required amount from deployment
             "nonce": w3.eth.get_transaction_count(seller.address),
-            "gas": 300000,
-            "gasPrice": w3.to_wei("20", "gwei")
+            "gas": 500000,
+            "gasPrice": w3.to_wei("1", "gwei")
         })
         
         signed_deposit = w3.eth.account.sign_transaction(deposit_tx, seller_priv)
@@ -404,8 +404,8 @@ def run_release():
         release_tx = escrow.functions.release().build_transaction({
             "from": seller.address,
             "nonce": w3.eth.get_transaction_count(seller.address),
-            "gas": 200000,
-            "gasPrice": w3.to_wei("20", "gwei")
+            "gas": 500000,
+            "gasPrice": w3.to_wei("1", "gwei")
         })
         signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
         tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
@@ -440,7 +440,7 @@ def run_incomplete_and_refund():
         call_opts = {
             'from': buyer.address,
             'gas': 500000,
-            'gasPrice': w3.to_wei('20', 'gwei')
+            'gasPrice': w3.to_wei('1', 'gwei')
         }
         escrow.functions.refund().call(call_opts)
         print("✓ Pre-check passed for run_incomplete_and_refund()")
@@ -466,7 +466,7 @@ def run_incomplete_and_refund():
             "from": buyer.address,
             "nonce": w3.eth.get_transaction_count(buyer.address),
             "gas": 500000,  # ↑ Higher gas limit
-            "gasPrice": w3.to_wei("20", "gwei")
+            "gasPrice": w3.to_wei("1", "gwei")
         })
         signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
         tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
