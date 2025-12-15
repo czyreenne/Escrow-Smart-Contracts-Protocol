@@ -18,10 +18,26 @@ buyer = w3.eth.account.from_key(buyer_priv)
 seller = w3.eth.account.from_key(seller_priv)
 
 """ 🎯 SMART PRE-CHECK + VYPER REVERT DECODER (Ganache-proof!) """
-def smart_precheck(escrow, function_name, *args, from_addr=None, value=0):
+def smart_precheck(escrow, cv_contract, function_name, *args, from_addr=None, value=0, is_cv=False):
     """State-aware pre-check: 100% accurate, NO RPC simulation bugs"""
     from_addr = from_addr or buyer.address
     
+    if is_cv:  # ConditionVerifier functions
+        if function_name == "deposit_eth":
+            if not args:
+                return False, "🛑 NO CONDITION_ID PROVIDED"
+            condition_id = args[0]
+            # Check if already fulfilled
+            try:
+                fulfilled = cv_contract.functions.is_condition_fulfilled(condition_id).call()
+                if fulfilled:
+                    return False, f"🛑 CONDITION {condition_id} ALREADY FULFILLED"
+            except:
+                pass
+            return True, "success"
+        return True, "success"
+    
+    # Escrow functions (existing logic)
     if function_name == "deposit":
         state = escrow.functions.state().call()
         if state == 1:
@@ -77,19 +93,21 @@ def decode_revert_reason_raw(revert_data: str) -> str:
     
     return f"raw revert: {revert_data[:50]}..."
 
-""" BULLETPROOF Transaction Sender (Ganache revert detector) """
-def safe_tx(escrow, fn_name, *args, from_addr=buyer.address, value=0, signer_priv=buyer_priv, escrow_addr=""):
+""" BULLETPROOF Transaction Sender (Escrow + ConditionVerifier) """
+def safe_tx(escrow, cv_contract, fn_name, *args, from_addr=buyer.address, value=0, 
+            signer_priv=buyer_priv, escrow_addr="", is_cv=False):
     """Build, sign, send tx + VALIDATE with smart pre-check"""
     
-    # 🎯 SMART PRE-CHECK FIRST (no Ganache simulation bugs!)
-    success, reason = smart_precheck(escrow, fn_name, *args, from_addr, value)
+    # 🎯 SMART PRE-CHECK FIRST
+    success, reason = smart_precheck(escrow, cv_contract, fn_name, *args, from_addr, value, is_cv)
     if not success:
         log_result(f"{fn_name}_PRECHECK_FAIL", False, reason, escrow_addr)
         print(f"PRE-SIM FAIL {fn_name}: {reason}")
         return None
     
-    # Build and send
-    fn = getattr(escrow.functions, fn_name)
+    # Determine target contract and function
+    target_contract = cv_contract if is_cv else escrow
+    fn = getattr(target_contract.functions, fn_name)
     nonce = w3.eth.get_transaction_count(from_addr)
     gas_price = w3.to_wei("20", "gwei")
     gas = 2000000
@@ -113,16 +131,22 @@ def safe_tx(escrow, fn_name, *args, from_addr=buyer.address, value=0, signer_pri
             return receipt
         else:
             # 🔍 POST-TX DIAGNOSIS
-            state = escrow.functions.state().call()
-            num_conditions = escrow.functions.get_num_conditions().call()
-            all_fulfilled = escrow.functions.all_conditions_fulfilled().call({'from': seller.address})
-            
-            if num_conditions > 0 and not all_fulfilled:
-                reason = "🛑 NOT ALL CONDITIONS FULFILLED"
-            elif state != 1:
-                reason = "🛑 WRONG STATE"
+            if fn_name == "release":
+                num_conditions = escrow.functions.get_num_conditions().call()
+                all_fulfilled = escrow.functions.all_conditions_fulfilled().call({'from': seller.address})
+                if num_conditions > 0 and not all_fulfilled:
+                    reason = "🛑 NOT ALL CONDITIONS FULFILLED"
+                else:
+                    reason = "🛑 EXTERNAL CONDITION FAILED"
+            elif fn_name == "deposit_eth":
+                condition_id = args[0] if args else 0
+                try:
+                    fulfilled = cv_contract.functions.is_condition_fulfilled(condition_id).call()
+                    reason = f"🛑 CONDITION {condition_id} NOT FULFILLED" if not fulfilled else "🛑 UNKNOWN CV REVERT"
+                except:
+                    reason = "🛑 CV REVERT"
             else:
-                reason = "🛑 EXTERNAL CONDITION FAILED"
+                reason = "🛑 TX REVERTED"
             
             log_result(fn_name, False, reason, escrow_addr)
             print(f"❌ {fn_name} TX REVERTED: {reason}")
@@ -151,7 +175,6 @@ def log_result(operation, success, error_msg="", escrow_addr=""):
     }
     fuzz_results.append(result)
     
-    # Pattern detection for common Vyper asserts
     status = '✅' if success else '❌'
     msg_preview = (error_msg[:60] + "..." if error_msg else "").replace("🛑 VYPER ASSERT: '", "")
     
@@ -163,77 +186,85 @@ def log_result(operation, success, error_msg="", escrow_addr=""):
         msg_preview = "💰 " + msg_preview
     elif "external" in msg_preview.lower():
         msg_preview = "🔗 " + msg_preview
+    elif "deposit_eth" in operation:
+        msg_preview = "🌐 " + msg_preview
     
     print(f"[{len(fuzz_results)}] {operation} → {status} {msg_preview}")
 
 def fuzz_iteration(): 
-    # NEW : 6-TUPLE DEPLOYMENT (Escrow + ConditionVerifier + Condition)
+    # 6-TUPLE DEPLOYMENT (Escrow + ConditionVerifier + Condition)
     escrow_addr, escrow_abi, cv_addr, cv_abi, condition_id, w3_fuzzer = deploy_escrow_with_verifier(
-        seller.address,             # seller
-        random.randint(3600, 7200), # timeout
-        buyer.address,              # beneficiary  
-        w3.to_wei(1, 'ether')       # required_amount
+        seller.address,             
+        random.randint(3600, 7200), 
+        buyer.address,              
+        w3.to_wei(1, 'ether')       
     )
     escrow = w3.eth.contract(address=escrow_addr, abi=escrow_abi)
+    cv_contract = w3.eth.contract(address=cv_addr, abi=cv_abi)
     
     log_result("DEPLOY", True, "", escrow_addr)
-    print(f"🆕 Deployed: {escrow_addr}")
+    print(f"🆕 Deployed: {escrow_addr} (CV: {cv_addr}, Cond: {condition_id})")
     
     # Generate odd data upfront for conditions
     num_conditions = random.randint(0, 10)
     odd_conditions = []
     for i in range(num_conditions):
         odd_descs = [
-            '',                                    # empty
-            'a' * random.randint(90, 100),         # max length overflow
-            ''.join(random.choices('☃★♠™€∂£', k=50)), # unicode/special chars
-            ''.join(random.choices('0123456789', k=50)), # numbers only
-            'x' * random.randint(1, 89),           # normal but random
+            '',                                    
+            'a' * random.randint(90, 100),         
+            ''.join(random.choices('☃★♠™€∂£', k=50)), 
+            ''.join(random.choices('0123456789', k=50)), 
+            'x' * random.randint(1, 89),           
         ]
         odd_conditions.append(random.choice(odd_descs))
     
-    # Define all possible operations as callables (MULTIPLE INSTANCES!)
+    # Define all possible operations as callables (NOW WITH CV!)
     operations = []
     
-    # Multiple deposit attempts (0-3 different amounts)
+    # 1. Multiple deposit attempts
     num_deposits = random.randint(0, 3)
     for _ in range(num_deposits):
         deposit_value = w3.to_wei(random.uniform(0.000001, 10), 'ether')
-        operations.append(lambda v=deposit_value: safe_tx(escrow, "deposit", 
-                                                         value=v, 
-                                                         from_addr=buyer.address, 
-                                                         signer_priv=buyer_priv,
-                                                         escrow_addr=escrow_addr))
+        operations.append(lambda v=deposit_value: safe_tx(escrow, cv_contract, "deposit", 
+                                                         value=v, from_addr=buyer.address, 
+                                                         signer_priv=buyer_priv, escrow_addr=escrow_addr))
     
-    # Multiple add_conditions with ODD DATA (0-10)
+    # 2. Multiple add_conditions with ODD DATA
     for desc in odd_conditions:
-        operations.append(lambda d=desc: safe_tx(escrow, "add_conditions", d, 
-                                                from_addr=buyer.address,
-                                                escrow_addr=escrow_addr))
+        operations.append(lambda d=desc: safe_tx(escrow, cv_contract, "add_conditions", d, 
+                                                from_addr=buyer.address, escrow_addr=escrow_addr))
     
-    # Multiple fulfill_condition (OOB + valid indices)
+    # 3. Multiple fulfill_condition (OOB + valid)
     num_fulfills = random.randint(0, num_conditions + 3)
     for _ in range(num_fulfills):
         condition_idx = random.randint(-5, num_conditions + 5)
-        if condition_idx < 0: condition_idx = 0  # Vyper clamps
-        operations.append(lambda idx=condition_idx: safe_tx(escrow, "fulfill_condition", idx,
+        if condition_idx < 0: condition_idx = 0
+        operations.append(lambda idx=condition_idx: safe_tx(escrow, cv_contract, "fulfill_condition", idx,
                                                            from_addr=seller.address, 
-                                                           signer_priv=seller_priv,
-                                                           escrow_addr=escrow_addr))
+                                                           signer_priv=seller_priv, escrow_addr=escrow_addr))
     
-    # Multiple release attempts
+    # 4. Multiple deposit_to_verifier (under/over required amount)
+    num_cv_deposits = random.randint(0, 4)
+    for _ in range(num_cv_deposits):
+        cv_value = w3.to_wei(random.uniform(0.1, 3), 'ether')  # Sometimes under, sometimes over
+        operations.append(lambda v=cv_value, cid=condition_id: safe_tx(escrow, cv_contract, "deposit_eth", cid,
+                                                                      value=v, from_addr=seller.address, 
+                                                                      signer_priv=seller_priv, 
+                                                                      escrow_addr=escrow_addr, is_cv=True))
+    
+    # 5. Multiple release attempts
     for _ in range(random.randint(1, 3)):
-        operations.append(lambda: safe_tx(escrow, "release", 
-                                         from_addr=seller.address, 
-                                         signer_priv=seller_priv,
+        operations.append(lambda: safe_tx(escrow, cv_contract, "release", 
+                                         from_addr=seller.address, signer_priv=seller_priv,
                                          escrow_addr=escrow_addr))
     
-    # Multiple refund attempts (with time advance)
+    # 6. Multiple refund attempts
     for _ in range(random.randint(0, 2)):
         operations.append(lambda: (
             w3.provider.make_request("evm_increaseTime", [7200]),
             w3.provider.make_request("evm_mine", []),
-            safe_tx(escrow, "refund", from_addr=buyer.address, signer_priv=buyer_priv, escrow_addr=escrow_addr)
+            safe_tx(escrow, cv_contract, "refund", from_addr=buyer.address, 
+                    signer_priv=buyer_priv, escrow_addr=escrow_addr)
         )[2])
     
     # 🌀 Run 8-15 RANDOM operations in RANDOM ORDER
@@ -248,12 +279,14 @@ def fuzz_iteration():
             log_result(f"OP_{i}_CRASH", False, str(e), escrow_addr)
     
     # Iteration summary
-    recent_ops = [r for r in fuzz_results[-20:] if "iteration" not in r.get("operation", "")]
+    recent_ops = [r for r in fuzz_results[-25:] if "iteration" not in r.get("operation", "")]
     iteration_success_rate = sum(1 for r in recent_ops if r.get("success", False)) / max(1, len(recent_ops))
     
     fuzz_results.append({
         "iteration": len([r for r in fuzz_results if "iteration" in r]) + 1,
         "escrow_addr": escrow_addr,
+        "cv_addr": cv_addr,
+        "condition_id": condition_id,
         "total_ops_attempted": num_ops,
         "total_ops_available": len(operations),
         "success_rate": float(iteration_success_rate)
