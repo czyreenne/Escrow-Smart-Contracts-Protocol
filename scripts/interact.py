@@ -193,6 +193,15 @@ def print_all_conditions():
         status = "✅" if fulfilled else "❌"
         print(f"  {status} [{i}] {desc}")
 
+def all_conditions_fulfilled():
+    all_fulfilled = escrow.functions.all_conditions_fulfilled().call({
+        "from": seller.address
+    })
+    if all_fulfilled:
+        print("All conditions are fulfilled")
+    else:
+        print("Not all conditions are fulfilled. Please check with print_all_conditions()")
+
 def get_events(event_name, tx_hash, contract=None):
     receipt = w3.eth.get_transaction_receipt(tx_hash)
     try:
@@ -463,6 +472,8 @@ if __name__ == "__main__":
                 add_conditions(sys.argv[2])
             elif test == 'fulfill_conditions' and len(sys.argv) >= 3:
                 fulfill_conditions([int(x) for x in sys.argv[2:]])
+            elif test == "check_conditions":
+                all_conditions_fulfilled()
             elif test == 'deposit_to_verifier':
                 deposit_to_verifier()
             elif test == 'verify_external_condition':

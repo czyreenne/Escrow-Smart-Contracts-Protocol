@@ -348,6 +348,35 @@
         "beneficiary": "0x8Ac5b5400d77F2E0D55aB844c23C904516108468",
         "requiredAmount": 3654279658035655000
       }
+    },
+    {
+      "contract": "ConditionVerifier",
+      "address": "0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7",
+      "txHash": "2e50abdf4806fe48681e1bee4c1a5800138c4a83dd61cf315c0e02e4d321b191",
+      "deployer": "0x340849B91117D16f1e0C12DC1DeD347EC963b7AA",
+      "timestamp": "2025-12-15T14:22:53Z",
+      "constructorArgs": []
+    },
+    {
+      "contract": "Escrow",
+      "address": "0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0",
+      "txHash": "6abf5aa5762553700d9991d844e9e5a525fb45b8d79e03f831c608c5f500fb53",
+      "deployer": "0x340849B91117D16f1e0C12DC1DeD347EC963b7AA",
+      "seller": "0x3b958F4E8489b3540c56d87121aB597D6ECef05d",
+      "timestamp": "2025-12-15T14:22:53Z",
+      "constructorArgs": [
+        "0x3b958F4E8489b3540c56d87121aB597D6ECef05d",
+        3600,
+        "0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7",
+        0,
+        "0x946A84AD0C7952D5D03BB8D43e894cc069DC5157"
+      ],
+      "linkedContracts": {
+        "conditionVerifier": "0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7",
+        "externalConditionId": 0,
+        "beneficiary": "0x946A84AD0C7952D5D03BB8D43e894cc069DC5157",
+        "requiredAmount": 3654279658035655000
+      }
     }
   ]
 }

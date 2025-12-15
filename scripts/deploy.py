@@ -1,5 +1,5 @@
 # python3 scripts/deploy.py <seller_address> <timeout> <beneficiary_address> <required_eth_amount_in_wei>
-# sample: python3 scripts/deploy.py 0x8Ca8e2040405FfaFe77Ed403C22b81068719AE43 3600 0x8Ac5b5400d77F2E0D55aB844c23C904516108468 3654279658035655000
+# sample: python3 scripts/deploy.py 0x3b958F4E8489b3540c56d87121aB597D6ECef05d 3600 0x946A84AD0C7952D5D03BB8D43e894cc069DC5157 3654279658035655000
 
 import os
 import sys

@@ -90,6 +90,7 @@ See here for high-level flow: [docs/architecture diagram.png](https://github.com
 - python3 scripts/interact.py add_conditions "deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF" (deposit funds to beneficiary)
 - (for verification) python3 scripts/interact.py print_all_conditions
 - python3 scripts/interact.py fulfill_conditions 0
+- python3 scripts/interact.py check_conditions
 - python3 scripts/interact.py deposit_to_verifier
 - python3 scripts/interact.py full_audit
 
@@ -115,111 +116,99 @@ Press Ctrl+C to stop
   Monitoring: ConditionFulfilled events from 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1</code></pre>
 
 Example of interact.py output [Deposit]:
-<pre><code>python3 scripts/interact.py deposit
-Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+<pre><code>python3 scripts/interact.py deposit                                                                
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
-Running deposit workflow
+💰 DEPOSIT WORKFLOW
+✅ DEPOSIT SUCCEEDED!
 
-Deposit event test: Buyer deposits to escrow
-
-
- Current Contract State
+🔍 Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1 | Balance: 991469611380000000000
-Seller:  0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7 | Balance: 1001941660559999999876
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 998958683000000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 1000000000000000000000 
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xb8c877ef0e381a56db810b0e75d4802a6ac24373b86d1226f6d982db42cb122e') and logIndex: 1 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
-Checking for Deposited event...
-[{'buyer': '0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1', 'amount': 1000000000000000000}]
-
-Scenario: deposit
-TX Hash: b8c877ef0e381a56db810b0e75d4802a6ac24373b86d1226f6d982db42cb122e
-State: 1
-Buyer Balance: 991469611380000000000
-Seller Balance: 1001941660559999999876
-Contract Balance: 1000000000000000000
-Amount Locked: 1000000000000000000
-Events: [{'buyer': '0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1', 'amount': 1000000000000000000}]
-Status: 1
-------------------------------------------------</code></pre>
+Deposited event: [{'buyer': '0x340849B91117D16f1e0C12DC1DeD347EC963b7AA', 'amount': 1000000000000000000}]</code></pre>
 
 Example of interact.py output [Add Condition]:
-<pre><code>python3 scripts/interact.py add_conditions "Deliver funds"
-Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+<pre><code>python3 scripts/interact.py add_conditions "deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF"
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
-Condition added: Deliver funds
-Added condition event: [{'index': 0, 'description': 'Deliver funds'}]
-Unknown test case: Deliver funds. *Note: just ignore this if you see an output when calling one of the non-main functions
+📝 ADD CONDITIONS WORKFLOW
+✅ Condition ADDED: 'deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF'
+ConditionAdded event: [{'index': 0, 'description': 'deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF'}]
+❓ Unknown: deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
 
-Available commands:
-  deposit, add_conditions, print_all_conditions, fulfill_conditions
-  check_conditions, release, incomplete_and_refund
-  deposit_to_verifier, verify_external_condition
-  get_condition_details, escrow_summary
+🚀 Commands:
+  deposit | release | refund
+  add_conditions "Text" | fulfill_conditions 0 1
+  deposit_to_verifier | verify_external_condition
+  print_all_conditions | escrow_summary | full_audit
+</code></pre>
 
+Example of interact.py output [Print All Conditions]:
+<pre><code>python3 scripts/interact.py print_all_conditions
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+📋 Total Conditions: 1
+  ❌ [0] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
 </code></pre>
 
 Example of interact.py output [Fulfill Condition at index 0]:
 <pre><code>python3 scripts/interact.py fulfill_conditions 0
-Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
-    Condition 0 fulfilled.
+✅ FULFILL CONDITIONS WORKFLOW
+✅ Condition 0 FULFILLED ✓
 
- Current Contract State
+🔍 Current Contract State
 State  (0=Init, 1=Funded): 1
-Buyer:   0xc2595E5c48af7f2Ab168376B2566Ba5155b52Ee1 | Balance: 991467645360000000000
-Seller:  0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7 | Balance: 1001930811359999999876
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 998958561445000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 999999943339000000000  
 Contract balance: 1000000000000000000
 Amount locked: 1000000000000000000
 
-Condition(s) fulfilled
-Unknown test case: 0. *Note: just ignore this if you see an output when calling one of the non-main functions
+📋 Total Conditions: 1
+  ✅ [0] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+❓ Unknown: 0
 
-Available commands:
-  deposit, add_conditions, print_all_conditions, fulfill_conditions
-  check_conditions, release, incomplete_and_refund
-  deposit_to_verifier, verify_external_condition
-  get_condition_details, escrow_summary
-
+🚀 Commands:
+  deposit | release | refund
+  add_conditions "Text" | fulfill_conditions 0 1
+  deposit_to_verifier | verify_external_condition
+  print_all_conditions | escrow_summary | full_audit
 </code></pre>
 
 Example of interact.py output [Check Conditions]:
 <pre><code>python3 scripts/interact.py check_conditions
-Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
 All conditions are fulfilled
-
 </code></pre>
 
 Example of interact.py output [Deposit to Verifier]:
 <pre><code>python3 scripts/interact.py deposit_to_verifier
-Connected to Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-Connected to ConditionVerifier: 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
-
-=== Depositing to ConditionVerifier===
+🌐 EXTERNAL CONDITION WORKFLOW
 Condition ID: 0
-Required Amount: 1E-18 ETH
-Beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
-TX Hash: a74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847
-✅ Deposit successful!
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 0 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 1 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
-✅ External condition automatically fulfilled!
-   Event: AttributeDict({'condition_id': 0, 'condition_type': 1, 'timestamp': 1765515173})
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0xa74a2f98253ddeecea341549ea9081ee0b840ea2fe7dbc6be11c54205ac64847') and logIndex: 2 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
-💸 ETH forwarded to beneficiary: 0x98a99e8e0dd26BA6645935603F4Ad4A1C86eBeb9
-
+Required: Ξ 3.654279658035655
+✅ Deposit to verifier SUCCEEDED!
+TX: 3a6845847a4329af05dd72f89dff35397b91ba7d786aac16859870c13bcf731c
+✅ External condition FULFILLED!
 </code></pre>
 
 Example of automated release (same terminal the bot was listening on):
@@ -245,35 +234,143 @@ Example of automated release (same terminal the bot was listening on):
 
 Example of interact.py output [Full Audit Trail]:
 <pre><code>python3 scripts/interact.py full_audit
-0x429c1b306ba868301cdfefd29310ccb6f8a9772da6b28b370016ed9050f9c15e
-Connected to Escrow: 0x50E70A4685486Ce9eCC900913c2D42A577Da7855
-Connected to ConditionVerifier: 0xB8ED5D40707C304FfeC2e82b0f7389650847242b
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
 External Condition ID: 0
 
-🔍 EVENT DECODER (0x50E70A4685486Ce9eCC900913c2D42A577Da7855):
-================================================================================
-ABI Event: Deposited            → 2da466a7b24304f47e87fa2e1e5a81b9831ce54fec19055ce277ca2f39ba42c4  
-ABI Event: Released             → b21fb52d5749b80f3182f8c6992236b5e5576681880914484d7f4c9b062e619e  
-ABI Event: Refunded             → d7dee2702d63ad89917b6a4da9981c90c4d24f8c2bdfd64c604ecae57d8d0651  
-ABI Event: ConditionFulfilled   → c7104caeb6f835c836dbbc04d0ccee00c51e89a718def631c9d0e20878ccdc80  
-ABI Event: ConditionAdded       → a1cf80a32c29ea13fb276c75b3196c5610dad18c0bb8053eac8336b200889bf4  
+🔍 EVENT DECODER (0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0):
+================================================================================      
+ABI Event: Deposited            → 2da466a7b24304f47e87fa2e1e5a81b9831ce54fec19055ce277ca2f39ba42c4
+ABI Event: Released             → b21fb52d5749b80f3182f8c6992236b5e5576681880914484d7f4c9b062e619e
+ABI Event: Refunded             → d7dee2702d63ad89917b6a4da9981c90c4d24f8c2bdfd64c604ecae57d8d0651
+ABI Event: ConditionFulfilled   → c7104caeb6f835c836dbbc04d0ccee00c51e89a718def631c9d0e20878ccdc80
+ABI Event: ConditionAdded       → a1cf80a32c29ea13fb276c75b3196c5610dad18c0bb8053eac8336b200889bf4
 ABI Event: ExternalConditionChecked → f1ea5a2eaecc05cf34f347a10bc0efac75cbf98bb6f9685c82b8a74b22933293
-ABI Event: EscrowStatus         → 8abb8eb32bea36df9bd1cf5605f44e11854ea29cef2ec948a458421eae631af7  
+ABI Event: EscrowStatus         → 8abb8eb32bea36df9bd1cf5605f44e11854ea29cef2ec948a458421eae631af7
 
-Found 4 logs:
-[ 0] ✅ EscrowStatus         | Block 87
+Found 8 logs:
+[ 0] ✅ EscrowStatus         | Block 3
      Sig: 8abb8eb32bea36df9bd1...
      Topic1: 00000000000000000000...
      Topic2: 00000000000000000000...
-[ 1] ✅ Deposited            | Block 88
+[ 1] ✅ Deposited            | Block 4
      Sig: 2da466a7b24304f47e87...
-[ 2] ✅ EscrowStatus         | Block 88
+[ 2] ✅ EscrowStatus         | Block 4
      Sig: 8abb8eb32bea36df9bd1...
      Topic1: 00000000000000000000...
      Topic2: 00000000000000000000...
-[ 3] ✅ ConditionAdded       | Block 89
+[ 3] ✅ ConditionAdded       | Block 5
      Sig: a1cf80a32c29ea13fb27...
-================================================================================</pre></code>
+[ 4] ✅ ConditionFulfilled   | Block 6
+     Sig: c7104caeb6f835c836db...
+[ 5] ✅ ExternalConditionChecked | Block 8
+     Sig: f1ea5a2eaecc05cf34f3...
+     Topic1: 00000000000000000000...
+     Topic2: 00000000000000000000...
+[ 6] ✅ Released             | Block 8
+     Sig: b21fb52d5749b80f3182...
+[ 7] ✅ EscrowStatus         | Block 8
+     Sig: 8abb8eb32bea36df9bd1...
+     Topic1: 00000000000000000000...
+     Topic2: 00000000000000000000...
+================================================================================  </code></pre>
+
+Example of interact.py output [Refund]:
+<pre><code>python3 scripts/interact.py refund
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+💸 REFUND WORKFLOW
+⏩ Time advanced past timeout
+✅ REFUND SUCCEEDED!
+
+🔍 Current Contract State
+State  (0=Init, 1=Funded): 0
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 997958243169000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 998342477368964345000  
+Contract balance: 0
+Amount locked: 0
+</code></pre>
+
+Example of interact.py output [Error handling]:
+<pre><code>python3 scripts/interact.py deposit
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+💰 DEPOSIT WORKFLOW
+❌ PRE-SIM FAIL deposit: 🛑 ALREADY FUNDED (State=1)
+
+🔍 Current Contract State
+State  (0=Init, 1=Funded): 1
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 997958488185000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 997344052060964345000  
+Contract balance: 1000000000000000000
+Amount locked: 1000000000000000000
+</code></pre>
+<pre><code>python3 scripts/interact.py fulfill_conditions 3
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+✅ FULFILL CONDITIONS WORKFLOW
+❌ PRE-SIM FAIL fulfill_condition(3): 🛑 INDEX OUT OF BOUNDS (3 >= 2)
+
+🔍 Current Contract State
+State  (0=Init, 1=Funded): 1
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 996958290570000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 998343477368964345000  
+Contract balance: 1000000000000000000
+Amount locked: 1000000000000000000
+
+📋 Total Conditions: 2
+  ✅ [0] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+  ❌ [1] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+❓ Unknown: 3
+
+🚀 Commands:
+  deposit | release | refund
+  add_conditions "Text" | fulfill_conditions 0 1
+  deposit_to_verifier | verify_external_condition
+  print_all_conditions | escrow_summary | full_audit
+</code></pre>
+<pre><code>python3 scripts/interact.py release
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+🔓 RELEASE WORKFLOW
+❌ PRE-SIM FAIL release: 🛑 NOT FUNDED (State≠1)
+
+🔍 Current Contract State
+State  (0=Init, 1=Funded): 0
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 997958243169000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 998342477368964345000  
+Contract balance: 0
+Amount locked: 0
+</code></pre>
+<pre><code>python3 scripts/interact.py release
+0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
+Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
+Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+External Condition ID: 0
+🔓 RELEASE WORKFLOW
+❌ RELEASE FAILED: TX REVERTED (status=0)
+
+🔍 Current Contract State
+State  (0=Init, 1=Funded): 1
+Buyer:   0x340849B91117D16f1e0C12DC1DeD347EC963b7AA | Balance: 996958045554000000000  
+Seller:  0x3b958F4E8489b3540c56d87121aB597D6ECef05d | Balance: 998341977368964345000  
+Contract balance: 1000000000000000000
+Amount locked: 1000000000000000000
+
+📋 Total Conditions: 3
+  ✅ [0] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+  ❌ [1] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+  ❌ [2] deposit funds to 0xd22a3D2106DAa62B337D9b4650c711EB9E6de7EF
+  </code></pre>
 
 ## Test Scripts
 [Guide to Automated Test Suite](tests/README.md)
