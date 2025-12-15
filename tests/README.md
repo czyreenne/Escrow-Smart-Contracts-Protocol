@@ -52,6 +52,271 @@ Total Conditions: 2
 Condition 0: Random condition | Fulfilled: True
 Condition 1: Random condition | Fulfilled: False</code></pre>
 
+All tests in test_escrow.py output:
+<pre><code>---TESTS BEGIN NOW---
+
+---TEST 1: Repeated Deposit---
+ConditionVerifier deployed at: 0x436B3DF9bF100973fd49F654726cB1206E2e8C46
+Condition created with ID: 0
+Escrow deployed at: 0x3D5C4C0f9248078a55592912e1BDEf29458E4377
+
+Testing repeated deposit...
+Expected Result: FAIL - contract has already been funded.
+
+===Attempting First Deposit===
+Deposit Succeeded!
+===Attempting Second Deposit===
+Deposit Failed.
+---------------------------------------------------------------------------------
+---TEST 2: Release Before Internal Condition Fulfilment---
+ConditionVerifier deployed at: 0x2E49e664081E5947a5fc4ef6c35B7DE1262dA0eD
+Condition created with ID: 0
+Escrow deployed at: 0x80A0F30785cA5319AC5F390D2658Ad45ab25EA12
+
+Testing early release (0 completions)...
+Expected Result: FAIL - internal condition not fulfilled.
+
+===Attempting deposit===
+Deposit Succeeded!
+===Attempting to add a simple condition===
+Condition added: Random condition
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Attempting to perform early release===
+Release failed.
+===Checking conditions===
+Total Conditions: 1
+Condition 0: Random condition | Fulfilled: False
+---------------------------------------------------------------------------------
+---TEST 3: Edge Timeout---
+ConditionVerifier deployed at: 0xB7264129F7Fc2c5934077E2922C3d2460077C1dE
+Condition created with ID: 0
+Escrow deployed at: 0xD61aF422e63c23D31D142A6BC1a7395cA4fd4Dac
+
+Testing edge timeout: Before Timeout...
+Expected Result: FAIL - not enough time has passed to request a refund.
+
+===Attempting deposit===
+Deposit Succeeded!
+===Attempting to add a simple condition===
+Condition added: Random condition
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Fastforwarding and attempting refund by close to 3600===
+Refund failed.
+
+ConditionVerifier deployed at: 0xd0f78ceD45461CBF5E642B25091Ef51918246f19
+Condition created with ID: 0
+Escrow deployed at: 0x5EF2B6B5B2Eb70419BB457990E8b92D501350Ae6
+
+Testing edge timeout: Exactly on Timeout...
+Expected Result: FAIL - buyer can only request refund AFTER timeout
+
+===Attempting deposit===
+Deposit Succeeded!
+===Attempting to add a simple condition===
+Condition added: Random condition
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Fastforwarding and attempting refund by 3600===
+Refund succeeded!
+
+ConditionVerifier deployed at: 0x41b11B41463Eb2911e468E6fce2C6Aa6fFf2A914
+Condition created with ID: 0
+Escrow deployed at: 0xC3c070214426F915A24245c8b5add184b5AeD74d
+
+Testing edge timeout: Just after timeout...
+Expected Result: SUCCESS - enough time has passed
+
+===Attempting deposit===
+Deposit Succeeded!
+===Attempting to add a simple condition===
+Condition added: Random condition
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Fastforwarding and attempting refund by just over 3600===
+Refund succeeded!
+---------------------------------------------------------------------------------
+---TEST 4: Refund after Condition Completion---
+ConditionVerifier deployed at: 0x650Ab88BAB102BA788a2402621c0E92bd8e2b37A
+Condition created with ID: 0
+Escrow deployed at: 0x3fF1C851C5c8864C2fb64ddcF021c7D619E8cF81
+
+Testing Refund after Completing All Conditions...
+Expected Result: FAIL - buyer cannot request refund after seller has completed conditions
+
+===Attempting deposit===
+Deposit Succeeded!
+===Attempting to add a simple condition===
+Condition added: Random condition
+===Completing Condition===
+ Condition 0 fulfilled.
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Fastforwarding and attempting refund by just over 3600===
+Refund failed.
+All conditions are fulfilled
+---------------------------------------------------------------------------------     
+---TEST 5: Invalid Internal Condition Index---
+ConditionVerifier deployed at: 0xFb29F477CDcb30F2A77052b43b6F0518E946e223
+Condition created with ID: 0
+Escrow deployed at: 0x4261536A95282cdd7c238F15CC0E05e6C82a87bb
+
+Testing Invalid Condition Index + Max Conditions + Double Completion
+This first part tests if we can add an 11th condition and complete it.
+Expected Result: FAIL - maximum 10 internal conditions
+
+===Attempting Deposit===
+Deposit Succeeded!
+
+===Attempting to add condition 0===
+Condition added: Random condition
+===Attempting to add condition 1===
+Condition added: Random condition
+===Attempting to add condition 2===
+Condition added: Random condition
+===Attempting to add condition 3===
+Condition added: Random condition
+===Attempting to add condition 4===
+Condition added: Random condition
+===Attempting to add condition 5===
+Condition added: Random condition
+===Attempting to add condition 6===
+Condition added: Random condition
+===Attempting to add condition 7===
+Condition added: Random condition
+===Attempting to add condition 8===
+Condition added: Random condition
+===Attempting to add condition 9===
+Condition added: Random condition
+===Attempting to add condition 10===
+Condition could not be added.
+
+===Completing Condition outside of Index===
+Error fulfilling condition 10
+===Checking conditions===
+Total Conditions: 10
+Condition 0: Random condition | Fulfilled: False
+Condition 1: Random condition | Fulfilled: False
+Condition 2: Random condition | Fulfilled: False
+Condition 3: Random condition | Fulfilled: False
+Condition 4: Random condition | Fulfilled: False
+Condition 5: Random condition | Fulfilled: False
+Condition 6: Random condition | Fulfilled: False
+Condition 7: Random condition | Fulfilled: False
+Condition 8: Random condition | Fulfilled: False
+Condition 9: Random condition | Fulfilled: False
+
+This second part now tests if we can fulfill all 10 internal conditions and release funds.
+Expected Result: SUCCESS - fulfilling all conditions should allow release.
+
+===Completing all 10 Conditions===
+ Condition 0 fulfilled.
+ Condition 1 fulfilled.
+ Condition 2 fulfilled.
+ Condition 3 fulfilled.
+ Condition 4 fulfilled.
+ Condition 5 fulfilled.
+ Condition 6 fulfilled.
+ Condition 7 fulfilled.
+ Condition 8 fulfilled.
+ Condition 9 fulfilled.
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Attempting Release===
+Release succeeded!
+===Checking conditions===
+Total Conditions: 10
+Condition 0: Random condition | Fulfilled: True
+Condition 1: Random condition | Fulfilled: True
+Condition 2: Random condition | Fulfilled: True
+Condition 3: Random condition | Fulfilled: True
+Condition 4: Random condition | Fulfilled: True
+Condition 5: Random condition | Fulfilled: True
+Condition 6: Random condition | Fulfilled: True
+Condition 7: Random condition | Fulfilled: True
+Condition 8: Random condition | Fulfilled: True
+Condition 9: Random condition | Fulfilled: True
+
+This third part tests what happens if we attempt to fulfill the same condition twice  
+Expected Result: FAIL - Condition has already been fulfilled.
+
+===Completing the first Condition again===
+Error fulfilling condition 0
+---------------------------------------------------------------------------------
+---TEST 6: Partial Internal Condition Fulfilment Release---
+ConditionVerifier deployed at: 0x44189f4595cf207B95d4bC8B809fBa652713D555
+Condition created with ID: 0
+Escrow deployed at: 0xCD5cD773F5BC0FB5250776f52C0056e695e51461
+
+Testing Release WITHOUT Fulfilling All Conditions...
+Expected Result: FAIL - cannot release funds with partial completion.
+
+===Attempting Deposit===
+Deposit Succeeded!
+===Attempting to add condition 0===
+Condition added: Random condition
+===Attempting to add condition 1===
+Condition added: Random condition
+
+===Completing First Condition===
+ Condition 0 fulfilled.
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Attempting Early Release===
+Release failed.
+===Checking conditions===
+Total Conditions: 2
+Condition 0: Random condition | Fulfilled: True
+Condition 1: Random condition | Fulfilled: False
+---------------------------------------------------------------------------------     
+---TEST 7: Zero Internal Condition Release---
+Testing zero internal condition release
+ConditionVerifier deployed at: 0xC94b07581F405c930635916511A1e185305EB9c5
+Condition created with ID: 0
+Escrow deployed at: 0x332eC1398c1F70d7730487525D644172F6E72072
+
+Testing Release with 0 internal conditions...
+Expected Result: SUCCEED - once the external condition is fulfilled, it should release.
+
+===Attempting Deposit===
+Deposit Succeeded!
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Attempting Release===
+Release succeeded!
+
+Testing zero internal condition refund
+ConditionVerifier deployed at: 0x122951E731Ef0dFE5Ae5D10609865F6A7271cB64
+Condition created with ID: 0
+Escrow deployed at: 0x6A381403291F9C902B5D0af099C04d3b7bc6BcFE
+
+Testing Refund with 0 internal conditions...
+Expected Result: FAIL - once the external condition is fulfilled, refund is no longer 
+permitted.
+
+===Attempting Deposit===
+Deposit Succeeded!
+===Fulfilling external condition===
+Deposited to ConditionVerifier for condition 0
+===Attempting Refund===
+Refund failed.
+All conditions are fulfilled
+---------------------------------------------------------------------------------     
+---TEST 8: Empty Internal Condition Description---
+ConditionVerifier deployed at: 0x75DDdc40B614192Ee794e35352543e41dD4ddea9
+Condition created with ID: 0
+Escrow deployed at: 0xc6Df0A655D16E67eC8fE7DD817DEE9Ce34374DFC
+
+Testing adding internal condition with empty description...
+Expected Result: SUCCESS - no restriction on condition description.
+
+===Adding Condition with no Description===
+Condition added: 
+===Checking Conditions===
+Total Conditions: 1
+Condition 0:  | Fulfilled: False</code></pre>
+
 ## All tests for fuzz_test.py
 1. Internal Conditions (Escrow)
 `deposit()` → Already funded (State=1), random amounts
