@@ -207,7 +207,23 @@ def refund():
     assert msg.sender == self.buyer, "permission denied"                                                    # Only the buyer can call refund
     assert self.state == 1, "contract has not been funded."                                                 # Only if contract is funded
     assert block.timestamp > self.start + self.timeout, "timeout has not passed"                            # Only after waiting enough time
-    assert not self._all_conditions_fulfilled(), "all conditions have already been fulfilled"               # Only if not all conditions fulfilled
+    
+    # NEW: Allow refund if either:
+    # 1. Internal conditions not all fulfilled, OR
+    # 2. External condition not fulfilled
+    internal_fulfilled: bool = self._all_conditions_fulfilled()
+    external_fulfilled: bool = self._check_external_condition()
+    
+    assert not (internal_fulfilled and external_fulfilled), "all conditions have already been fulfilled"  # Only if not BOTH fulfilled                           
+
+    # Log external condition result in the state-changing function
+    log ExternalConditionChecked(
+        condition_id=self.external_condition_id,
+        verifier=self.condition_verifier,
+        seller=self.seller,
+        beneficiary=self.beneficiary,
+        success=external_fulfilled
+    )
 
     # Again, CHANGE state first to 'refunded' so no tricks can happen!
     self.state = 0                                          # Mark as refunded
