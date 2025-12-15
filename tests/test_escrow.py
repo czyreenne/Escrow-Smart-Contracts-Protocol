@@ -10,6 +10,8 @@ audit_trail = []
 w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:8545"))
 assert w3.is_connected(), "Web3 connection failed!"
 
+# --- HELPER FUNCTIONS ---
+# Helper function to deploy fresh contracts
 def setup_contract(timeout, required_amount=1000000000000000000):   # Default 1 ETH
     """
     Setup contract with external condition
@@ -44,7 +46,7 @@ def setup_contract(timeout, required_amount=1000000000000000000):   # Default 1 
 # Helper function to deposit to ConditionVerifier (fulfill external condition)
 def deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, amount):
     """Deposit to ConditionVerifier to fulfill external condition"""
-    deposit_cv_tx = cv_contract.functions.deposit(condition_id).build_transaction({
+    deposit_cv_tx = cv_contract.functions.deposit_eth(condition_id).build_transaction({
         "from": seller.address,
         "value": amount,
         "nonce": w3.eth.get_transaction_count(seller.address),
@@ -194,8 +196,7 @@ def fulfill_conditions(indices, contract, seller, seller_priv):
                 print(f"Error fulfilling condition {idx2}")
         except Exception as e:
             print(e)
-    
-    print("Condition(s) fulfilled")
+
 
 # Check if all conditions are fulfilled
 def all_conditions_fulfilled(contract, seller):
@@ -208,12 +209,12 @@ def all_conditions_fulfilled(contract, seller):
     else:
         print("Not all conditions are fulfilled. Please check with print_all_conditions()")
 
-
 # --- TEST 1: Repeated Deposit ---
 # Deposit 1 ETH → Deposit 1 ETH again
 def test_repeated_deposit():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("Testing repeated deposit...")
+    print("\nTesting repeated deposit...")
+    print("Expected Result: FAIL - contract has already been funded.\n")
     
     try:
         print("===Attempting First Deposit===")
@@ -229,13 +230,16 @@ def test_repeated_deposit():
 # External condition is NOT fulfilled - should fail
 def test_early_release():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("Testing early release (0 completions)...")
+    print("\nTesting early release (0 completions)...")
+    print("Expected Result: FAIL - internal condition not fulfilled.\n")
     
     try:
         print("===Attempting deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
         print("===Attempting to add a simple condition===")
         add_conditions(escrow, buyer, buyer_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Attempting to perform early release===")
         run_release(escrow, seller, seller_priv)  # Should fail (internal condition not fulfilled)
         print("===Checking conditions===")
@@ -248,13 +252,16 @@ def test_early_release():
 # Deposit → Add condition → Fast-forward → Refund
 def test_edge_timeout():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("Testing edge timeout: Before Timeout...")
+    print("\nTesting edge timeout: Before Timeout...")
+    print("Expected Result: FAIL - not enough time has passed to request a refund.\n")
     
     try:
         print("===Attempting deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
         print("===Attempting to add a simple condition===")
         add_conditions(escrow, buyer, buyer_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by close to 3600===")
         run_incomplete_and_refund(3599, escrow, buyer, buyer_priv)  # This should fail
     except Exception as e:
@@ -263,12 +270,15 @@ def test_edge_timeout():
     print()
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("\nTesting edge timeout: Exactly on Timeout...")
-    
+    print("Expected Result: FAIL - buyer can only request refund AFTER timeout\n")
+
     try:
         print("===Attempting deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
         print("===Attempting to add a simple condition===")
         add_conditions(escrow, buyer, buyer_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by 3600===")
         run_incomplete_and_refund(3600, escrow, buyer, buyer_priv)  # This should fail also
     except Exception as e:
@@ -277,12 +287,15 @@ def test_edge_timeout():
     print()
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("\nTesting edge timeout: Just after timeout...")
+    print("Expected Result: SUCCESS - enough time has passed\n")
     
     try:
         print("===Attempting deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
         print("===Attempting to add a simple condition===")
         add_conditions(escrow, buyer, buyer_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by just over 3600===")
         run_incomplete_and_refund(3601, escrow, buyer, buyer_priv)  # This should succeed
     except Exception as e:
@@ -293,7 +306,9 @@ def test_edge_timeout():
 # Deposit → Add condition → Fulfill → Fast-forward → Refund
 def test_refund_after_completion():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
+    print("\nTesting Refund after Completing All Conditions...")
+    print("Expected Result: FAIL - buyer cannot request refund after seller has completed conditions\n")
+
     try:
         print("===Attempting deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
@@ -301,6 +316,8 @@ def test_refund_after_completion():
         add_conditions(escrow, buyer, buyer_priv)
         print("===Completing Condition===")
         fulfill_conditions([0], escrow, seller, seller_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by just over 3600===")
         run_incomplete_and_refund(3601, escrow, buyer, buyer_priv)  # This should fail
         all_conditions_fulfilled(escrow, seller)
@@ -314,24 +331,28 @@ def test_refund_after_completion():
 # Then: Fulfill 0 again (double fulfill)
 def test_invalid_index():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
+    print("\nTesting Invalid Condition Index + Max Conditions + Double Completion")
+    print("This first part tests if we can add an 11th condition and complete it.")
+    print("Expected Result: FAIL - maximum 10 internal conditions\n")
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
-        
+        print()
+
         for i in range(11):
             print(f"===Attempting to add condition {i}===")
             add_conditions(escrow, buyer, buyer_priv)
         
-        print("===Completing Condition outside of Index===")
+        print("\n===Completing Condition outside of Index===")
         fulfill_conditions([10], escrow, seller, seller_priv)
         print("===Checking conditions===")
         print_all_conditions(escrow)
     except Exception as e:
         print(e)
     
-    print("This second part now tests if it will work if we fulfill all 10 conditions")
-    
+    print("\nThis second part now tests if we can fulfill all 10 internal conditions and release funds.")
+    print("Expected Result: SUCCESS - fulfilling all conditions should allow release.\n")
+
     try:
         print("===Completing all 10 Conditions===")
         fulfill_conditions([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], escrow, seller, seller_priv)
@@ -347,11 +368,12 @@ def test_invalid_index():
     except Exception as e:
         print(e)
     
-    print("This third part tests what happens if we attempt to fulfill the same condition twice")
+    print("\nThis third part tests what happens if we attempt to fulfill the same condition twice")
+    print("Expected Result: FAIL - Condition has already been fulfilled.\n")
     
     try:
         print("===Completing the first Condition again===")
-        fulfill_conditions([0], escrow, seller, seller_priv)  # This correctly results in an error
+        fulfill_conditions([0], escrow, seller, seller_priv)  # This correctly results in an error.
     except Exception as e:
         print(e)
 
@@ -360,7 +382,9 @@ def test_invalid_index():
 # Add 2 conditions → Fulfill 1 → Release (should fail)
 def test_partial_completion_release():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
+    print("\nTesting Release WITHOUT Fulfilling All Conditions...")
+    print("Expected Result: FAIL - cannot release funds with partial completion.\n")
+
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
@@ -369,7 +393,7 @@ def test_partial_completion_release():
             print(f"===Attempting to add condition {i}===")
             add_conditions(escrow, buyer, buyer_priv)
         
-        print("===Completing Condition===")
+        print("\n===Completing First Condition===")
         fulfill_conditions([0], escrow, seller, seller_priv)
         
         # Fulfill external condition
@@ -388,9 +412,11 @@ def test_partial_completion_release():
 # Deposit → Release (no conditions)
 # Deposit → Fast-forward → Refund (no conditions)
 def test_zero_conditions():
-    print("Testing zero condition release")
+    print("Testing zero internal condition release")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
+    print("\nTesting Release with 0 internal conditions...")
+    print("Expected Result: SUCCEED - once the external condition is fulfilled, it should release.\n")
+
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
@@ -404,14 +430,21 @@ def test_zero_conditions():
     except Exception as e:
         print(e)
     
-    print("\nTesting zero condition refund")
+    print("\nTesting zero internal condition refund")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     
+    print("\nTesting Refund with 0 internal conditions...")
+    print("Expected Result: FAIL - once the external condition is fulfilled, refund is no longer permitted.\n")
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
+
+        # Fulfill external condition
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
+
         print("===Attempting Refund===")
-        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv)  # Should work
+        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv) # Should work
         all_conditions_fulfilled(escrow, seller)
     except Exception as e:
         print(e)
@@ -421,10 +454,12 @@ def test_zero_conditions():
 # Add condition with "" (empty string)
 def test_empty_description():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
+    print("\nTesting adding internal condition with empty description...")
+    print("Expected Result: SUCCESS - no restriction on condition description.\n")
+
     try:
         print("===Adding Condition with no Description===")
-        add_condition_empty(escrow, buyer, buyer_priv)  # Should be allowed
+        add_condition_empty(escrow, buyer, buyer_priv)
         print("===Checking Conditions===")
         print_all_conditions(escrow)
     except Exception as e:
