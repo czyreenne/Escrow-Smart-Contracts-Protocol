@@ -207,6 +207,9 @@ def all_conditions_fulfilled(contract, seller):
     else:
         print("❌ Not all conditions are fulfilled.")
 
+# --- CUSTOM FUNCTIONS ---
+
+
 # --- TEST 1: Repeated Deposit ---
 # Deposit 1 ETH → Deposit 1 ETH again
 def test_repeated_deposit():
@@ -457,6 +460,93 @@ def test_empty_description():
     except Exception as e:
         print(e)
 
+# --- TEST 9: Deposit non-buyer ---
+def test_deposit_non_buyer():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing deposit as non-buyer (seller)...")
+    print("EXPECTED RESULT:❌ FAIL - only buyer can fund.\n")
+    
+    try:
+        print("=== Attempting Deposit as Seller===")
+        deposit_transaction(escrow, seller, seller_priv)  # Should fail
+    except Exception as e:
+        print(e)
+
+# --- TEST 10: Deposit non-buyer ---
+def test_deposit_non_buyer():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing deposit as non-buyer (seller)...")
+    print("EXPECTED RESULT:❌ FAIL - only buyer can fund.\n")
+    
+    try:
+        print("=== Attempting Deposit as Seller===")
+        deposit_transaction(escrow, seller, seller_priv)
+    except Exception as e:
+        print(e)
+
+# --- TEST 11: Add Condition non-buyer ---
+def test_add_non_buyer():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing add_condition as non-buyer (seller)...")
+    print("EXPECTED RESULT:❌ FAIL - only buyer can add conditions.\n")
+    
+    try:
+        print("=== Attempting Add condition as Seller===")
+        add_conditions(escrow, seller, seller_priv)
+    except Exception as e:
+        print(e)
+
+# --- TEST 11: Fulfill Condition non-seller ---
+def test_fulfill_non_seller():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing fulfill_conditions as non-seller (buyer)...")
+    print("EXPECTED RESULT:❌ FAIL - only seller can fulfill internal conditions.\n")
+    
+    try:
+        print("===Attempting to add a simple condition===")
+        add_conditions(escrow, buyer, buyer_priv)
+        print("===Completing Condition as buyer===")
+        fulfill_conditions([0], escrow, buyer, buyer_priv)
+    except Exception as e:
+        print(e)
+
+# --- TEST 12: Release non-seller ---
+def test_release_non_seller():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing release as non-seller (buyer)...")
+    print("EXPECTED RESULT:❌ FAIL - only seller can call release.\n")
+    
+    try:
+        print("===Attempting Deposit===")
+        deposit_transaction(escrow, buyer, buyer_priv)
+        print("===Attempting to add a simple condition===")
+        add_conditions(escrow, buyer, buyer_priv)
+        print("===Completing Condition===")
+        fulfill_conditions([0], escrow, seller, seller_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
+        print("===Attempting Release as buyer===")
+        run_release(escrow, buyer, buyer_priv)
+    except Exception as e:
+        print(e)
+
+# --- TEST 13: Refund non-buyer ---
+def test_refund_non_buyer():
+    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
+    print("\n💰 Testing refund as non-buyer (seller)...")
+    print("EXPECTED RESULT:❌ FAIL - only buyer can request refund.\n")
+    
+    try:
+        print("===Attempting Deposit===")
+        deposit_transaction(escrow, buyer, buyer_priv)
+        print("===Attempting to add a simple condition===")
+        add_conditions(escrow, buyer, buyer_priv)
+        print("===Fulfilling external condition===")
+        deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
+        print("===Attempting Refund as seller===")
+        run_incomplete_and_refund(3601, escrow, seller, seller_priv, seller)
+    except Exception as e:
+        print(e)
 
 if __name__ == "__main__":    
     print("---TEST 1: Repeated Deposit---")
@@ -489,3 +579,26 @@ if __name__ == "__main__":
     
     print("---TEST 8: Empty Internal Condition Description---")
     test_empty_description()
+    print("---------------------------------------------------------------------------------")
+
+    print("\n---PERMISSION BASED TESTS---\n")
+
+    print("---TEST 9: Deposit Non-buyer---")   
+    test_deposit_non_buyer()
+    print("---------------------------------------------------------------------------------")
+
+    print("---TEST 10: Add condition non-buyer---")
+    test_add_non_buyer()
+    print("---------------------------------------------------------------------------------")
+
+    print("---TEST 11: Fulfill condition non-seller---")
+    test_fulfill_non_seller()
+    print("---------------------------------------------------------------------------------")
+
+    print("---TEST 12: Release non-seller---")
+    test_release_non_seller()
+    print("---------------------------------------------------------------------------------")
+    
+    print("---TEST 13: Refund non-buyer---")
+    test_refund_non_buyer()
+    print("---------------------------------------------------------------------------------")
