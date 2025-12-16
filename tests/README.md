@@ -537,6 +537,8 @@ PRE-SIM FAIL release: 🛑 NOT FUNDED (State≠1)
 | successful_refund_timeout | Deposit -> add conditions -> wait for timeout -> refund | interact.py |
 
 **Edge Cases surrounding Permissions**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
 | failed_deposit_wrong_sender | Non-buyer tries to deposit | Test 9 test_escrow.py |
 | add_condition_non_buyer | Non-buyer tries to add an internal condition | Test 10 test_escrow.py |
 | fulfill_condition_non_seller | Non-seller tries to fulfill an internal condition | Test 11 test_escrow.py |
