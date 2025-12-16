@@ -12,6 +12,15 @@ from web3 import Web3
 from datetime import datetime
 import getpass
 
+import warnings
+from web3.exceptions import MismatchedABI
+
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message=".*MismatchedABI.*"
+)
+
 # Configuration
 GANACHE_URL = "http://127.0.0.1:8545"
 POLL_INTERVAL = 5  # seconds between checks

@@ -198,9 +198,9 @@ def all_conditions_fulfilled():
         "from": seller.address
     })
     if all_fulfilled:
-        print("All conditions are fulfilled")
+        print("✅ All conditions are fulfilled")
     else:
-        print("Not all conditions are fulfilled. Please check with print_all_conditions()")
+        print("❌ Not all conditions are fulfilled. Please check with print_all_conditions()")
 
 def get_events(event_name, tx_hash, contract=None):
     receipt = w3.eth.get_transaction_receipt(tx_hash)

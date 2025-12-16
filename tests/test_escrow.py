@@ -43,160 +43,158 @@ def setup_contract(timeout, required_amount=1000000000000000000):   # Default 1 
     
     return escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv
 
-# Helper function to deposit to ConditionVerifier (fulfill external condition)
+def decode_revert_reason_raw(revert_data: str) -> str:
+    """Decode Vyper assert from real tx reverts"""
+    if not revert_data or revert_data == '0x':
+        return "generic revert"
+    
+    try:
+        data_bytes = bytes.fromhex(revert_data[2:] if revert_data.startswith('0x') else revert_data)
+        if data_bytes[:4] == b'\x08\xc3\x79\xa0':
+            offset = int.from_bytes(data_bytes[4:36], 'big')
+            length = int.from_bytes(data_bytes[offset:offset+32], 'big')
+            message = data_bytes[offset+32:offset+32+length].decode('utf-8')
+            return f"🛑 VYPER ASSERT: '{message}'"
+    except:
+        pass
+    
+    return f"raw revert: {revert_data[:50]}..."
+
+def safe_send_tx(tx_fn, from_key, from_addr, value=0, expect_event=None, gas=500000, **kwargs):
+    """Send tx + VALIDATE it actually worked"""
+    try:
+        tx = tx_fn().build_transaction({
+            'from': from_addr,
+            'value': value,
+            'nonce': w3.eth.get_transaction_count(from_addr),
+            'gas': gas,
+            'gasPrice': w3.to_wei('1', 'gwei'),
+            **kwargs
+        })
+        
+        signed_tx = w3.eth.account.sign_transaction(tx, from_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        
+        if receipt.status == 0:
+            return False, "TX REVERTED (status=0)"
+                
+        return True, receipt
+        
+    except ContractLogicError as ex:
+        return False, decode_revert_reason_raw(str(ex))
+    except Exception as e:
+        return False, str(e)
+
+# --- WORKFLOW FUNCTIONS ---
 def deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, amount):
-    """Deposit to ConditionVerifier to fulfill external condition"""
-    deposit_cv_tx = cv_contract.functions.deposit_eth(condition_id).build_transaction({
-        "from": seller.address,
-        "value": amount,
-        "nonce": w3.eth.get_transaction_count(seller.address),
-        "gas": 300000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    
-    signed_deposit_cv = w3.eth.account.sign_transaction(deposit_cv_tx, seller_priv)
-    tx_hash_deposit_cv = w3.eth.send_raw_transaction(signed_deposit_cv.raw_transaction)
-    rcpt_deposit_cv = w3.eth.wait_for_transaction_receipt(tx_hash_deposit_cv)
-    
-    if rcpt_deposit_cv.status:
-        print(f"Deposited to ConditionVerifier for condition {condition_id}")
+    success, result = safe_send_tx(
+        lambda: cv_contract.functions.deposit_eth(condition_id),
+        seller_priv, seller.address,
+        value=amount,
+        gas=500000
+    )
+
+    if success:
+        print(f"✅ Deposited to ConditionVerifier for condition {condition_id}")
+        print("✅ External condition FULFILLED!")
     else:
-        print("Deposit to ConditionVerifier failed")
+        print("❌ Deposit to ConditionVerifier FAILED")
 
 # Helper check condition function
 def print_all_conditions(contract):
     num = contract.functions.get_num_conditions().call()
-    print(f"Total Conditions: {num}")
+    print(f"📋 Total Conditions: {num}")
     for i in range(num):
         desc, fulfilled = contract.functions.get_condition(i).call()
-        print(f"Condition {i}: {desc} | Fulfilled: {fulfilled}")
+        status = "✅" if fulfilled else "❌"
+        print(f"  {status} [{i}] {desc}")
 
 # The basic deposit transaction
 def deposit_transaction(contract, buyer, buyer_priv):
-    deposit_tx = contract.functions.deposit().build_transaction({
-        "from": buyer.address,
-        "value": w3.to_wei("1", "ether"),  # 1 ETH deposit
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    
-    signed_deposit = w3.eth.account.sign_transaction(deposit_tx, buyer_priv)
-    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
-    rcpt_deposit = w3.eth.wait_for_transaction_receipt(tx_hash_deposit)
-    
-    if rcpt_deposit.status:
-        print("Deposit Succeeded!")
+    success, result = safe_send_tx(
+        contract.functions.deposit,
+        buyer_priv, buyer.address,
+        value=w3.to_wei("1", "ether"),
+        expect_event="Deposited"
+    )
+
+    if success:
+        print("✅ DEPOSIT SUCCEEDED!")
     else:
-        print("Deposit Failed.")
+        print(f"❌ DEPOSIT FAILED: {result}")
 
 # Basic Add Condition
-def add_conditions(contract, buyer, buyer_priv):
-    condition = "Random condition"
-    add_tx = contract.functions.add_conditions(condition).build_transaction({
-        "from": buyer.address,
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 2000000,
-        "gasPrice": w3.to_wei("20", "gwei"),
-    })
-    
-    signed_add = w3.eth.account.sign_transaction(add_tx, buyer_priv)
-    tx_hash_add = w3.eth.send_raw_transaction(signed_add.raw_transaction)
-    rcpt_add = w3.eth.wait_for_transaction_receipt(tx_hash_add)
-    
-    if rcpt_add.status:
-        print(f"Condition added: {condition}")
+def add_conditions(contract, buyer, buyer_priv, empty = False):
+    if empty == False:
+        condition = "Random condition"
     else:
-        print("Condition could not be added.")
+        condition = ""
 
-# Add Condition with empty description
-def add_condition_empty(contract, buyer, buyer_priv):
-    condition = ""
-    add_tx = contract.functions.add_conditions(condition).build_transaction({
-        "from": buyer.address,
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 2000000,
-        "gasPrice": w3.to_wei("20", "gwei"),
-    })
+    success, result = safe_send_tx(
+        lambda: contract.functions.add_conditions(condition),
+        buyer_priv, buyer.address,
+        gas=5000000,
+        expect_event="ConditionAdded"
+    )
     
-    signed_add = w3.eth.account.sign_transaction(add_tx, buyer_priv)
-    tx_hash_add = w3.eth.send_raw_transaction(signed_add.raw_transaction)
-    rcpt_add = w3.eth.wait_for_transaction_receipt(tx_hash_add)
-    
-    if rcpt_add.status:
-        print(f"Condition added: {condition}")
+    if success:
+        print(f"✅ Condition ADDED: '{condition}'")
     else:
-        print("Condition could not be added.")
+        print(f"❌ add_conditions FAILED: {result}")
 
 # Basic release condition
 def run_release(contract, seller, seller_priv):
-    release_tx = contract.functions.release().build_transaction({
-        "from": seller.address,
-        "nonce": w3.eth.get_transaction_count(seller.address),
-        "gas": 300000,  # Increased gas for external condition check
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
+    success, result = safe_send_tx(
+        contract.functions.release,
+        seller_priv, seller.address,
+        expect_event="Released"
+    )
     
-    signed_release = w3.eth.account.sign_transaction(release_tx, seller_priv)
-    tx_hash_release = w3.eth.send_raw_transaction(signed_release.raw_transaction)
-    rcpt_release = w3.eth.wait_for_transaction_receipt(tx_hash_release)
-    
-    if rcpt_release.status:
-        print("Release succeeded!")
+    if success:
+        print("✅ RELEASE SUCCEEDED! 🎉!")
     else:
-        print("Release failed.")
-
+        print(f"❌ RELEASE FAILED: {result}")
+        print("\nCondition check:", end ="") 
+        all_conditions_fulfilled(contract, seller)
+    
 # Basic refund condition
-def run_incomplete_and_refund(fast_forward, contract, buyer, buyer_priv):
+def run_incomplete_and_refund(fast_forward, contract, buyer, buyer_priv, seller):
     w3.provider.make_request("evm_increaseTime", [fast_forward])
     w3.provider.make_request("evm_mine", [])
-    
-    refund_tx = contract.functions.refund().build_transaction({
-        "from": buyer.address,
-        "nonce": w3.eth.get_transaction_count(buyer.address),
-        "gas": 200000,
-        "gasPrice": w3.to_wei("20", "gwei")
-    })
-    
-    signed_refund = w3.eth.account.sign_transaction(refund_tx, buyer_priv)
-    tx_hash_refund = w3.eth.send_raw_transaction(signed_refund.raw_transaction)
-    rcpt_refund = w3.eth.wait_for_transaction_receipt(tx_hash_refund)
-    
-    if rcpt_refund.status == 1:
-        print("Refund succeeded!")
+    if fast_forward > 3600:
+        print("⏩ Time advanced past timeout")
     else:
-        print("Refund failed.")
+        print("⏩ Time advanced")
+
+    success, result = safe_send_tx(
+        contract.functions.refund,
+        buyer_priv, buyer.address,
+        expect_event="Refunded"
+    )
+
+    if success:
+        print("✅ REFUND SUCCEEDED!")
+    else:
+        print(f"❌ REFUND FAILED: {result}")
+        print("\nCondition check:", end ="") 
+        all_conditions_fulfilled(contract, seller)
 
 # Fulfill conditions function
 def fulfill_conditions(indices, contract, seller, seller_priv):
-    seen = set()
-    unique_indices = []
+    unique_indices = list(dict.fromkeys(indices))
     
-    for idx in indices:
-        if idx not in seen:
-            unique_indices.append(idx)
-            seen.add(idx)
-    
-    for idx2 in unique_indices:
-        try:
-            tx = contract.functions.fulfill_condition(idx2).build_transaction({
-                "from": seller.address,
-                "nonce": w3.eth.get_transaction_count(seller.address),
-                "gas": 100000,
-                "gasPrice": w3.to_wei("200", "gwei")
-            })
-            
-            signed_fulfill = w3.eth.account.sign_transaction(tx, seller_priv)
-            tx_hash_fulfill = w3.eth.send_raw_transaction(signed_fulfill.raw_transaction)
-            rcpt_fulfill = w3.eth.wait_for_transaction_receipt(tx_hash_fulfill)
-            
-            if rcpt_fulfill.status:
-                print(f" Condition {idx2} fulfilled.")
-            else:
-                print(f"Error fulfilling condition {idx2}")
-        except Exception as e:
-            print(e)
-
+    for idx in unique_indices:
+        success, result = safe_send_tx(
+            lambda: contract.functions.fulfill_condition(idx),
+            seller_priv, seller.address,
+            expect_event="ConditionFulfilled"
+        )
+        
+        if success:
+            print(f"✅ Condition {idx} FULFILLED ✓")
+        else:
+            print(f"❌ fulfill_condition({idx}) FAILED: {result}")
 
 # Check if all conditions are fulfilled
 def all_conditions_fulfilled(contract, seller):
@@ -205,21 +203,21 @@ def all_conditions_fulfilled(contract, seller):
     })
     
     if all_fulfilled:
-        print("All conditions are fulfilled")
+        print("✅ All conditions are fulfilled")
     else:
-        print("Not all conditions are fulfilled. Please check with print_all_conditions()")
+        print("❌ Not all conditions are fulfilled.")
 
 # --- TEST 1: Repeated Deposit ---
 # Deposit 1 ETH → Deposit 1 ETH again
 def test_repeated_deposit():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting repeated deposit...")
-    print("Expected Result: FAIL - contract has already been funded.\n")
+    print("\n💰 Testing repeated deposit...")
+    print("EXPECTED RESULT:❌ FAIL - contract has already been funded.\n")
     
     try:
-        print("===Attempting First Deposit===")
+        print("=== Attempting First Deposit ===")
         deposit_transaction(escrow, buyer, buyer_priv)  # Should succeed
-        print("===Attempting Second Deposit===")
+        print("=== Attempting Second Deposit ===")
         deposit_transaction(escrow, buyer, buyer_priv)  # Should fail
     except Exception as e:
         print(e)
@@ -230,8 +228,8 @@ def test_repeated_deposit():
 # External condition is NOT fulfilled - should fail
 def test_early_release():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting early release (0 completions)...")
-    print("Expected Result: FAIL - internal condition not fulfilled.\n")
+    print("\n🏃 Testing early release (0 completions)...")
+    print("EXPECTED RESULT:❌ FAIL - internal condition not fulfilled.\n")
     
     try:
         print("===Attempting deposit===")
@@ -242,8 +240,6 @@ def test_early_release():
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Attempting to perform early release===")
         run_release(escrow, seller, seller_priv)  # Should fail (internal condition not fulfilled)
-        print("===Checking conditions===")
-        print_all_conditions(escrow)
     except Exception as e:
         print(e)
 
@@ -251,9 +247,10 @@ def test_early_release():
 # --- TEST 3: Edge Timeout ---
 # Deposit → Add condition → Fast-forward → Refund
 def test_edge_timeout():
+    print("---TEST 3A: Edge Timeout---")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting edge timeout: Before Timeout...")
-    print("Expected Result: FAIL - not enough time has passed to request a refund.\n")
+    print("\n⏱️ Testing edge timeout: Before Timeout...")
+    print("EXPECTED RESULT:❌ FAIL - not enough time has passed to request a refund.\n")
     
     try:
         print("===Attempting deposit===")
@@ -262,15 +259,16 @@ def test_edge_timeout():
         add_conditions(escrow, buyer, buyer_priv)
         print("===Fulfilling external condition===")
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
-        print("===Fastforwarding and attempting refund by close to 3600===")
-        run_incomplete_and_refund(3599, escrow, buyer, buyer_priv)  # This should fail
+        print("===Fastforwarding and attempting refund by 3599 (current timeout: 3600)===")
+        run_incomplete_and_refund(3599, escrow, buyer, buyer_priv, seller)  # This should fail
     except Exception as e:
         print(e)
     
     print()
+    print("---TEST 3B: Edge Timeout---")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting edge timeout: Exactly on Timeout...")
-    print("Expected Result: FAIL - buyer can only request refund AFTER timeout\n")
+    print("\n⏱️ Testing edge timeout: Exactly on Timeout...")
+    print("EXPECTED RESULT:❌ FAIL - buyer can only request refund AFTER timeout\n")
 
     try:
         print("===Attempting deposit===")
@@ -280,14 +278,15 @@ def test_edge_timeout():
         print("===Fulfilling external condition===")
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by 3600===")
-        run_incomplete_and_refund(3600, escrow, buyer, buyer_priv)  # This should fail also
+        run_incomplete_and_refund(3600, escrow, buyer, buyer_priv, seller)  # This should fail also
     except Exception as e:
         print(e)
     
     print()
+    print("---TEST 3C: Edge Timeout---")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting edge timeout: Just after timeout...")
-    print("Expected Result: SUCCESS - enough time has passed\n")
+    print("\n⏱️ Testing edge timeout: Just after timeout...")
+    print("EXPECTED RESULT:✅ SUCCESS - enough time has passed\n")
     
     try:
         print("===Attempting deposit===")
@@ -297,7 +296,7 @@ def test_edge_timeout():
         print("===Fulfilling external condition===")
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by just over 3600===")
-        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv)  # This should succeed
+        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv, seller)  # This should succeed
     except Exception as e:
         print(e)
 
@@ -306,8 +305,8 @@ def test_edge_timeout():
 # Deposit → Add condition → Fulfill → Fast-forward → Refund
 def test_refund_after_completion():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting Refund after Completing All Conditions...")
-    print("Expected Result: FAIL - buyer cannot request refund after seller has completed conditions\n")
+    print("\n🔙 Testing Refund after Completing All Conditions...")
+    print("EXPECTED RESULT:❌ FAIL - buyer cannot request refund after seller has completed conditions\n")
 
     try:
         print("===Attempting deposit===")
@@ -319,8 +318,7 @@ def test_refund_after_completion():
         print("===Fulfilling external condition===")
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
         print("===Fastforwarding and attempting refund by just over 3600===")
-        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv)  # This should fail
-        all_conditions_fulfilled(escrow, seller)
+        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv, seller)  # This should fail
     except Exception as e:
         print(e)
 
@@ -331,9 +329,9 @@ def test_refund_after_completion():
 # Then: Fulfill 0 again (double fulfill)
 def test_invalid_index():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting Invalid Condition Index + Max Conditions + Double Completion")
+    print("\n☝️ Testing Invalid Condition Index + Max Conditions + Double Completion")
     print("This first part tests if we can add an 11th condition and complete it.")
-    print("Expected Result: FAIL - maximum 10 internal conditions\n")
+    print("EXPECTED RESULT:❌ FAIL - maximum 10 internal conditions\n")
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
@@ -350,8 +348,8 @@ def test_invalid_index():
     except Exception as e:
         print(e)
     
-    print("\nThis second part now tests if we can fulfill all 10 internal conditions and release funds.")
-    print("Expected Result: SUCCESS - fulfilling all conditions should allow release.\n")
+    print("\n📝 This second part now tests if we can fulfill all 10 internal conditions and release funds.")
+    print("EXPECTED RESULT:✅ SUCCESS - fulfilling all conditions should allow release.\n")
 
     try:
         print("===Completing all 10 Conditions===")
@@ -368,8 +366,8 @@ def test_invalid_index():
     except Exception as e:
         print(e)
     
-    print("\nThis third part tests what happens if we attempt to fulfill the same condition twice")
-    print("Expected Result: FAIL - Condition has already been fulfilled.\n")
+    print("\n🤔 This third part tests what happens if we attempt to fulfill the same condition twice")
+    print("EXPECTED RESULT:❌ FAIL - Condition has already been fulfilled.\n")
     
     try:
         print("===Completing the first Condition again===")
@@ -382,24 +380,20 @@ def test_invalid_index():
 # Add 2 conditions → Fulfill 1 → Release (should fail)
 def test_partial_completion_release():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting Release WITHOUT Fulfilling All Conditions...")
-    print("Expected Result: FAIL - cannot release funds with partial completion.\n")
+    print("\n🏃 Testing Release while fulfilling only some Conditions...")
+    print("EXPECTED RESULT:❌ FAIL - cannot release funds with partial completion.\n")
 
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
-        
         for i in range(2):
             print(f"===Attempting to add condition {i}===")
             add_conditions(escrow, buyer, buyer_priv)
-        
         print("\n===Completing First Condition===")
         fulfill_conditions([0], escrow, seller, seller_priv)
-        
         # Fulfill external condition
         print("===Fulfilling external condition===")
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
-        
         print("===Attempting Early Release===")
         run_release(escrow, seller, seller_priv)  # Should fail - internal condition 1 not fulfilled
         print("===Checking conditions===")
@@ -412,10 +406,10 @@ def test_partial_completion_release():
 # Deposit → Release (no conditions)
 # Deposit → Fast-forward → Refund (no conditions)
 def test_zero_conditions():
-    print("Testing zero internal condition release")
+    print("---TEST 7A: Zero Internal Conditions Release---")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting Release with 0 internal conditions...")
-    print("Expected Result: SUCCEED - once the external condition is fulfilled, it should release.\n")
+    print("\n0️⃣ Testing Release with 0 internal conditions...")
+    print("EXPECTED RESULT:✅ SUCCESS - once the external condition is fulfilled, it should release.\n")
 
     try:
         print("===Attempting Deposit===")
@@ -430,11 +424,10 @@ def test_zero_conditions():
     except Exception as e:
         print(e)
     
-    print("\nTesting zero internal condition refund")
+    print("\n---TEST 7B: Zero Internal Conditions Refund---")
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    
-    print("\nTesting Refund with 0 internal conditions...")
-    print("Expected Result: FAIL - once the external condition is fulfilled, refund is no longer permitted.\n")
+    print("\n0️⃣ Testing Refund with 0 internal conditions...")
+    print("EXPECTED RESULT:❌ FAIL - once the external condition is fulfilled, refund is no longer permitted.\n")
     try:
         print("===Attempting Deposit===")
         deposit_transaction(escrow, buyer, buyer_priv)
@@ -444,8 +437,7 @@ def test_zero_conditions():
         deposit_to_verifier(cv_contract, condition_id, seller, seller_priv, w3.to_wei("1", "ether"))
 
         print("===Attempting Refund===")
-        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv) # Should work
-        all_conditions_fulfilled(escrow, seller)
+        run_incomplete_and_refund(3601, escrow, buyer, buyer_priv, seller) # Should work
     except Exception as e:
         print(e)
 
@@ -454,21 +446,19 @@ def test_zero_conditions():
 # Add condition with "" (empty string)
 def test_empty_description():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting adding internal condition with empty description...")
-    print("Expected Result: SUCCESS - no restriction on condition description.\n")
+    print("\n☁️ Testing adding internal condition with empty description...")
+    print("EXPECTED RESULT:✅ SUCCESS - no restriction on condition description.\n")
 
     try:
         print("===Adding Condition with no Description===")
-        add_condition_empty(escrow, buyer, buyer_priv)
+        add_conditions(escrow, buyer, buyer_priv, empty = True)
         print("===Checking Conditions===")
         print_all_conditions(escrow)
     except Exception as e:
         print(e)
 
 
-if __name__ == "__main__":
-    print("---TESTS BEGIN NOW---\n")
-    
+if __name__ == "__main__":    
     print("---TEST 1: Repeated Deposit---")
     test_repeated_deposit()
     print("---------------------------------------------------------------------------------")
@@ -477,7 +467,7 @@ if __name__ == "__main__":
     test_early_release()
     print("---------------------------------------------------------------------------------")
     
-    print("---TEST 3: Edge Timeout---")
+    # print("---TEST 3: Edge Timeout---")
     test_edge_timeout()
     print("---------------------------------------------------------------------------------")
     
@@ -493,7 +483,7 @@ if __name__ == "__main__":
     test_partial_completion_release()
     print("---------------------------------------------------------------------------------")
     
-    print("---TEST 7: Zero Internal Condition Release---")
+    # print("---TEST 7: Zero Internal Condition Release---")
     test_zero_conditions()
     print("---------------------------------------------------------------------------------")
     

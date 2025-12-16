@@ -377,6 +377,93 @@
         "beneficiary": "0x946A84AD0C7952D5D03BB8D43e894cc069DC5157",
         "requiredAmount": 3654279658035655000
       }
+    },
+    {
+      "contract": "ConditionVerifier",
+      "address": "0x8ae9D79B01eb94ba0d39fF31522FD25bB251c4ab",
+      "txHash": "bfba21479700fe53d3f0b2ebeeb510c8d657d948ca390115cd0892b51783ffdc",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "timestamp": "2025-12-16T04:34:10Z",
+      "constructorArgs": []
+    },
+    {
+      "contract": "Escrow",
+      "address": "0xa3BbDC36CA04BA18AaBe243645C15Fa6dAaba0C1",
+      "txHash": "28a08bedceb22f5e279e2c594b9d92cc5cfa0f2441e0be676cede702a5a7675a",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "seller": "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+      "timestamp": "2025-12-16T04:34:10Z",
+      "constructorArgs": [
+        "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+        3600,
+        "0x8ae9D79B01eb94ba0d39fF31522FD25bB251c4ab",
+        0,
+        "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e"
+      ],
+      "linkedContracts": {
+        "conditionVerifier": "0x8ae9D79B01eb94ba0d39fF31522FD25bB251c4ab",
+        "externalConditionId": 0,
+        "beneficiary": "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e",
+        "requiredAmount": 1
+      }
+    },
+    {
+      "contract": "ConditionVerifier",
+      "address": "0x5eb731C61fEb83a3351E2213c4153f775c413742",
+      "txHash": "5e0a3f662d312095c681bbe1f9cbabc047a9644a896d7493696579f43db69fe1",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "timestamp": "2025-12-16T04:58:50Z",
+      "constructorArgs": []
+    },
+    {
+      "contract": "Escrow",
+      "address": "0x9E0D69F23f25A7d8B2D933B8A3D7B0EBaa919E08",
+      "txHash": "514b63d14d126c6db73924021e3e82131d61ee2a632aba3fdf3c904a821a7c69",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "seller": "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+      "timestamp": "2025-12-16T04:58:50Z",
+      "constructorArgs": [
+        "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+        3600,
+        "0x5eb731C61fEb83a3351E2213c4153f775c413742",
+        0,
+        "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e"
+      ],
+      "linkedContracts": {
+        "conditionVerifier": "0x5eb731C61fEb83a3351E2213c4153f775c413742",
+        "externalConditionId": 0,
+        "beneficiary": "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e",
+        "requiredAmount": 1
+      }
+    },
+    {
+      "contract": "ConditionVerifier",
+      "address": "0x8e627C1BF476c39E71CC360D58C99A1458320204",
+      "txHash": "1291efcd0076bc7d70aca9665922b37f961af7c1bd60db9b89bd24e267c29f8c",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "timestamp": "2025-12-16T05:04:07Z",
+      "constructorArgs": []
+    },
+    {
+      "contract": "Escrow",
+      "address": "0x2a524794D5884ba6b9E65e5Dab7Ba3a92aDF7C2F",
+      "txHash": "3f3c1be0a2608cfbc06a7bbbece935bc8fc018a32a0156031637534347748e60",
+      "deployer": "0xE01b46E1dB339DE7991C51DA026e39417163f9B1",
+      "seller": "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+      "timestamp": "2025-12-16T05:04:07Z",
+      "constructorArgs": [
+        "0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b",
+        3600,
+        "0x8e627C1BF476c39E71CC360D58C99A1458320204",
+        0,
+        "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e"
+      ],
+      "linkedContracts": {
+        "conditionVerifier": "0x8e627C1BF476c39E71CC360D58C99A1458320204",
+        "externalConditionId": 0,
+        "beneficiary": "0x56a0cEa1B7B73e16C2DBc831D174e14FE72F018e",
+        "requiredAmount": 1
+      }
     }
   ]
 }
