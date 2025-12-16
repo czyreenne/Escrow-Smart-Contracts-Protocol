@@ -213,21 +213,17 @@ TX: 3a6845847a4329af05dd72f89dff35397b91ba7d786aac16859870c13bcf731c
 
 Example of automated release (same terminal the bot was listening on):
 <pre><code>✓ Event filters set up
-  Monitoring: ConditionFulfilled events from 0xF36E275C574ce0d8912c4846d5a0Bb7974F9c3A1
+  Monitoring: ConditionFulfilled events from 0x8e627C1BF476c39E71CC360D58C99A1458320204
 
 🔔 NEW EVENT: ConditionFulfilled
    Condition ID: 0
-   Timestamp: 2025-12-12 05:52:57
+   Timestamp: 2025-12-16 06:04:56
 
 🤖 ATTEMPTING AUTO-RELEASE
-   Escrow: 0x3351a5e950044A26849E1D51d279a57b3442B82F
-   Seller: 0x65E66FB8b915A6F3edC37CDF4A4e4ef184c369F7
+   Escrow: 0x2a524794D5884ba6b9E65e5Dab7Ba3a92aDF7C2F
+   Seller: 0xcD540a74aC18cdFF52ee26A4Eeac92D3afeeC86b
    ✓ Pre-check passed
-   📤 Release TX sent: 557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0x557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c') and logIndex: 0 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
-/home/ryclin/projects/Escrow-Smart-Contracts-Protocol-v2/.venv/lib/python3.12/site-packages/eth_utils/functional.py:47: UserWarning: The log with transaction hash: HexBytes('0x557118c779c1f96739a3c0e585fb1b13094844840a59ef43dc3016a586de1d8c') and logIndex: 2 encountered the following error during processing: MismatchedABI(The event signature did not match the provided ABI). It has been discarded.
-  return callback(fn(*args, **kwargs))
+   📤 Release TX sent: 732afa3a5892d4ec0492d462ea7ba88fe4d4e847bc581ee6b79b5f152e596309
    ✅ RELEASE SUCCESSFUL!
       Amount: 1 ETH
       Gas used: 74692</code></pre>
