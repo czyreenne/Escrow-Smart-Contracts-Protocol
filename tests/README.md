@@ -1,7 +1,7 @@
 ## Test Directory Structure
 The testing suite consists of the following files:
 - `test_deploy.py`: Deploys ConditionVerifier and Escrow contracts without requiring manual input of the deployer's private key, allowing for multiple contract redeployments quickly to simulate a clean room environment. 
-- `test_escrow.py`: Runs eight manually drafted edge cases, deploying a fresh contract for each case
+- `test_escrow.py`: Runs seventeen manually drafted edge cases, deploying a fresh contract for each case
 - `fuzz_test.py`: Testing with randomised inputs and sequence of operations, up to n iterations (can be changed within the script itself)
 
 ## Instructions
@@ -524,3 +524,60 @@ PRE-SIM FAIL release: 🛑 NOT FUNDED (State≠1)
 === Iteration complete ===
 
 ✅ Saved 2505 results to fuzz_results_20251215_162506.json</code></pre>
+
+## Coverage Table:
+**Core Workflow**: See main README
+| Test | Description | In |
+| --- | --- | --- |
+| successful_deployment | Deploy contract, verify internal state | interact.py |
+| successful_deposit | Buyer deposits funds successfully | interact.py |
+| add_single_condition | Buyer adds one internal condition | interact.py |
+| fulfill_single_condition | Seller fulfills an internal condition | interact.py |
+| successful_release_with_internal_conditions | *Full flow*: deposit -> add conditions -> fulfill conditions -> deposit_to_verifier -> release | interact.py |
+| successful_refund_timeout | Deposit -> add conditions -> wait for timeout -> refund | interact.py |
+
+**Edge Cases surrounding Permissions**: See test_escrow.py
+| failed_deposit_wrong_sender | Non-buyer tries to deposit | Test 9 test_escrow.py |
+| add_condition_non_buyer | Non-buyer tries to add an internal condition | Test 10 test_escrow.py |
+| fulfill_condition_non_seller | Non-seller tries to fulfill an internal condition | Test 11 test_escrow.py |
+| release_non_seller | Non-seller tries to release | Test 12 test_escrow.py |
+| refund_non_buyer | Non-buyer tries to refund | Test 13 test_escrow.py |
+
+**Edge Cases surrounding Deposit Function**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
+| failed_double_deposit | Buyer deposits funds twice | Test 1 test_escrow.py |
+| failed_deposit_zero_value | Try depositing 0 wei | Test 14 test_escrow.py |
+
+**Edge Cases surrounding Add Conditions Function**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
+| add_max_conditions | Add 10 conditions successfully | Test 5 test_escrow.py |
+| exceed_max_conditions | Add an 11th condition (should fail) | Test 5 test_escrow.py |
+| add_empty_description | Add a condition with an empty string for the description | Test 8 test_escrow.py |
+
+**Edge Cases surrounding Fulfill Conditions Function**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
+| fulfill_invalid_index | Try to fulfill condition index >= num_conditions | Test 5 test_escrow.py |
+| fulfill_already_fulfilled | Try to fulfill the same condition twice | Test 5 test_escrow.py |
+
+**Edge Cases surrounding Release Function**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
+| early_release | Internal conditions partially completed / not completed at all | Tests 2, 6 test_escrow.py |
+| early_release_external |  External condition not fulfilled | Tests | 
+| successful_release_no_internal_conditions | Deposit -> deposit_to_verifier -> release | Test 7A test_escrow.py | 
+| release_not_funded | Release before deposit | Test 15 test_escrow.py | 
+
+**Edge Cases surrounding Refund Function**: See test_escrow.py
+| Test | Description | In |
+| --- | --- | --- |
+| refund_before_timeout | Refund just before timeout expires | Test 3A test_escrow.py |
+| refund_exactly_at_timeout | Refund exactly at timeout | Test 3B test_escrow.py |
+| refund_after_completion | Try refund when both internal and external conditions are fulfilled | Test 4 test_escrow.py |
+| refund_not_funded | Refund before deposit | Test 16 test_escrow.py |
+| refund_only_internal | Internal conditions fulfilled, external not fulfilled | Test 17 test_escrow.py |
+| refund_only_external | Internal conditions not fulfilled, external fulfilled | Test 18 test_escrow.py |
+
+
