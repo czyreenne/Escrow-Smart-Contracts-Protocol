@@ -190,11 +190,11 @@ Amount locked: 1000000000000000000
 
 Example of interact.py output [Check Conditions]:
 <pre><code>python3 scripts/interact.py check_conditions
-0xb6df1bc11927d210ef49f4ac1e306b342f0ac4a86a9fdfdf54bfee2a8110ed9e
-Connected to Escrow: 0xBa56eb22ed001B931fdbf08b5327F45a1fE1A9c0
-Connected to ConditionVerifier: 0x4934A8c41d7e151F95C2D7852e11FC6B1A6E7Ee7
+0xec485997fa9385ebe1a987036597f16d0a7bf125a85f7aaea6eef376c3f09de1
+Connected to Escrow: 0x2a524794D5884ba6b9E65e5Dab7Ba3a92aDF7C2F
+Connected to ConditionVerifier: 0x8e627C1BF476c39E71CC360D58C99A1458320204
 External Condition ID: 0
-All conditions are fulfilled
+✅ All conditions are fulfilled
 </code></pre>
 
 Example of interact.py output [Deposit to Verifier]:
