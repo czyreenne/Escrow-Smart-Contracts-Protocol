@@ -483,19 +483,7 @@ def test_deposit_non_buyer():
     except Exception as e:
         print(e)
 
-# --- TEST 10: Deposit non-buyer ---
-def test_deposit_non_buyer():
-    escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
-    print("\nTesting deposit as non-buyer (seller)...")
-    print("EXPECTED RESULT:❌ FAIL - only buyer can fund.\n")
-    
-    try:
-        print("=== Attempting Deposit as Seller===")
-        deposit_transaction(escrow, seller, seller_priv)
-    except Exception as e:
-        print(e)
-
-# --- TEST 11: Add Condition non-buyer ---
+# --- TEST 10: Add Condition non-buyer ---
 def test_add_non_buyer():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("\nTesting add_condition as non-buyer (seller)...")
@@ -631,7 +619,7 @@ def test_refund_only_internal():
     except Exception as e:
         print(e)
 
-# --- TEST 18: Refund when only external condition completed ---
+# --- TEST 19: Refund when only external condition completed ---
 def test_refund_only_external():
     escrow, cv_contract, condition_id, buyer, buyer_priv, seller, seller_priv = setup_contract(3600)
     print("\nTesting refund before completing internal condition...")
