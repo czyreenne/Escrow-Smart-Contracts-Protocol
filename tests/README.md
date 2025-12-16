@@ -568,9 +568,10 @@ PRE-SIM FAIL release: 🛑 NOT FUNDED (State≠1)
 | Test | Description | In |
 | --- | --- | --- |
 | early_release | Internal conditions partially completed / not completed at all | Tests 2, 6 test_escrow.py |
-| early_release_external |  External condition not fulfilled | Tests | 
 | successful_release_no_internal_conditions | Deposit -> deposit_to_verifier -> release | Test 7A test_escrow.py | 
 | release_not_funded | Release before deposit | Test 15 test_escrow.py | 
+| early_release_external |  External condition not fulfilled | Test 16 test_escrow.py | 
+
 
 **Edge Cases surrounding Refund Function**: See test_escrow.py
 | Test | Description | In |
@@ -578,8 +579,8 @@ PRE-SIM FAIL release: 🛑 NOT FUNDED (State≠1)
 | refund_before_timeout | Refund just before timeout expires | Test 3A test_escrow.py |
 | refund_exactly_at_timeout | Refund exactly at timeout | Test 3B test_escrow.py |
 | refund_after_completion | Try refund when both internal and external conditions are fulfilled | Test 4 test_escrow.py |
-| refund_not_funded | Refund before deposit | Test 16 test_escrow.py |
-| refund_only_internal | Internal conditions fulfilled, external not fulfilled | Test 17 test_escrow.py |
-| refund_only_external | Internal conditions not fulfilled, external fulfilled | Test 18 test_escrow.py |
+| refund_before_deposit | Refund before deposit | Test 17 test_escrow.py |
+| refund_only_internal | Internal conditions fulfilled, external not fulfilled | Test 18 test_escrow.py |
+| refund_only_external | Internal conditions not fulfilled, external fulfilled | Test 19 test_escrow.py |
 
 
