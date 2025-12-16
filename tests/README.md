@@ -21,8 +21,11 @@ Then, simply run `python3 tests/<SCRIPT.py>` and the test suite should run.
 6. PARTIAL COMPLETION        → FAIL (1/2 conditions fulfilled)
 7. ZERO CONDITIONS           → release: SUCCESS; refund: FAIL (external only)
 8. EMPTY DESCRIPTION         → SUCCESS (no restrictions)
-
-9-13. PERMISSION TESTS       → FAIL (attempting operations as wrong roles)
+9. DEPOSIT AS NON-BUYER      → FAIL (WRONG ROLES TILL 13)
+10. ADD AS NON-BUYER         → FAIL
+11. FULFILL AS NON-SELLER    → FAIL
+12. RELEASE AS NON-SELLER    → FAIL
+13. REFUND AS NON-BUYER      → FAIL
 14. DEPOSIT ZERO VALUE       → FAIL (cannot deposit 0 value)
 15. RELEASE NOT FUNDED       → FAIL (cannot release unfunded contract)
 16. RELEASE ONLY INTERNAL    → FAIL (only release when both internal and external are fulfilled) 
